@@ -1,0 +1,398 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "K8s UI Tools API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local dev server"
+    }
+  ],
+  "paths": {
+    "/api/tools/k8s-namespaces": {
+      "get": {
+        "summary": "List Kubernetes namespaces",
+        "operationId": "listNamespaces",
+        "responses": {
+          "200": {
+            "description": "Namespaces list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "namespaces": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-pod-resources": {
+      "get": {
+        "summary": "List pod resources in a namespace",
+        "operationId": "listPodResources",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "default" },
+            "description": "Kubernetes namespace (defaults to 'default')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pod list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/K8sListResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-deployments": {
+      "get": {
+        "summary": "List deployments in a namespace",
+        "operationId": "listDeployments",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "default" },
+            "description": "Kubernetes namespace (defaults to 'default')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deployments list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/K8sListResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-replicasets": {
+      "get": {
+        "summary": "List ReplicaSets in a namespace",
+        "operationId": "listReplicaSets",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "default" },
+            "description": "Kubernetes namespace (defaults to 'default')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ReplicaSets list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/K8sListResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-statefulsets": {
+      "get": {
+        "summary": "List StatefulSets in a namespace",
+        "operationId": "listStatefulSets",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "default" },
+            "description": "Kubernetes namespace (defaults to 'default')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "StatefulSets list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/K8sListResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-daemonsets": {
+      "get": {
+        "summary": "List DaemonSets in a namespace",
+        "operationId": "listDaemonSets",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "default" },
+            "description": "Kubernetes namespace (defaults to 'default')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DaemonSets list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/K8sListResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-services": {
+      "get": {
+        "summary": "List Services in a namespace",
+        "operationId": "listServices",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "default" },
+            "description": "Kubernetes namespace (defaults to 'default')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Services list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/K8sListResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-endpoints": {
+      "get": {
+        "summary": "List Endpoints in a namespace",
+        "operationId": "listEndpoints",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "default" },
+            "description": "Kubernetes namespace (defaults to 'default')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Endpoints list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/K8sListResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-ingresses": {
+      "get": {
+        "summary": "List Ingresses in a namespace",
+        "operationId": "listIngresses",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "default" },
+            "description": "Kubernetes namespace (defaults to 'default')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ingresses list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/K8sListResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-events": {
+      "get": {
+        "summary": "List Events in a namespace",
+        "operationId": "listEvents",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "default" },
+            "description": "Kubernetes namespace (defaults to 'default')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/K8sListResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-volumes": {
+      "get": {
+        "summary": "List PersistentVolumeClaims in a namespace",
+        "operationId": "listPVCs",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "default" },
+            "description": "Kubernetes namespace (defaults to 'default')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PVC list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/K8sListResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "K8sListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
+
