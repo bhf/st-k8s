@@ -1,4 +1,4 @@
-# K8s Read Only UI, API and MCP
+# ST-K8s
 
 View and chat to your Kubernetes cluster.
 
