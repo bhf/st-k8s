@@ -102,27 +102,7 @@ Add the following to your ```mcp.json```
 
 ```
 
-[Back to Top](#top)
-
-### Configuring Claude for Desktop
-
-Add the following configuration to your Claude for Desktop config file (usually `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS or `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
-
-```json
-{
-  "mcpServers": {
-    "k8s-tools": {
-      "command": "npm",
-      "args": ["run", "mcp"],
-      "cwd": "/absolute/path/to/st-k8s",
-      "env": {
-        "KUBECONFIG": "/absolute/path/to/your/kubeconfig"
-      }
-    }
-  }
-}
-```
-
 Make sure to replace `/absolute/path/to/st-k8s` with the actual path to this repository on your machine.
 
 [Back to Top](#top)
+
