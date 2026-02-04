@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getNamespaces } from "@/lib/k8s";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     const namespaces = await getNamespaces();

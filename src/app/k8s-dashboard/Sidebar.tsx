@@ -58,7 +58,7 @@ export default function Sidebar({
   isLoadingNamespaces
 }: SidebarProps) {
   return (
-    <aside className="w-full md:w-64 bg-zinc-50 dark:bg-zinc-900 border-r flex flex-col h-full">
+    <aside className="hidden md:flex md:w-64 bg-zinc-50 dark:bg-zinc-900 border-r flex-col h-full">
       <div className="p-4 border-b flex items-center bg-black justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <Image

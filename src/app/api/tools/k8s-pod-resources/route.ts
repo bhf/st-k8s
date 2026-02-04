@@ -1,6 +1,8 @@
 import {NextRequest, NextResponse} from "next/server";
 import {getPods} from "@/lib/k8s";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
     const {searchParams} = new URL(req.url);
     // Robustly extract namespace: use 'default' if missing, empty, or whitespace

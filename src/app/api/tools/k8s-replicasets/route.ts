@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getReplicaSets } from "@/lib/k8s";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  let namespace = searchParams.get("namespace");
-  if (!namespace || !namespace.trim()) {
-    namespace = "default";
-  } else {
-    namespace = namespace.trim();
-  }
+  const namespace = searchParams.get("namespace")?.trim() || "default";
 
   try {
     const items = await getReplicaSets(namespace);
