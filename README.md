@@ -7,7 +7,7 @@ View and chat to your Kubernetes cluster.
 Features a dashboard (with a K9s inspired dark theme), REST API, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview). 
 Integrates with VSCode and Copilot.
 
-![img.png](docs/img.png)
+![img.png](docs/img_0.png)
 
 
 ## Table of Contents
