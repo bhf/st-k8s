@@ -33,7 +33,7 @@ export default function RootLayout({
           <div className="min-h-screen pb-14">
             {children}
           </div>
-          <footer className="fixed bottom-0 left-0 w-full bg-black text-white h-8 flex items-center justify-center z-50 text-s overflow-hidden whitespace-nowrap">
+          <footer className="hidden md:flex fixed bottom-0 left-0 w-full bg-black text-white h-8 items-center justify-center z-50 text-s overflow-hidden whitespace-nowrap">
             © 2025 <a href="https://sanjeev.pages.dev/" target="_blank" rel="noopener noreferrer" className="underline ml-1">StayTuned</a>
           </footer>
         </Providers>

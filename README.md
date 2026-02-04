@@ -4,7 +4,8 @@
 View and chat to your Kubernetes cluster.
 
 
-Features a dashboard (with a K9s inspired dark theme), REST API, and MCP server. Integrates with VSCode and Copilot.
+Features a dashboard (with a K9s inspired dark theme), REST API, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview). 
+Integrates with VSCode and Copilot.
 
 ![img.png](docs/img.png)
 
@@ -26,6 +27,8 @@ git clone https://github.com/bhf/st-k8s
 npm run build
 npm run start
 ```
+
+To use the browser based chat feature make sure you install the [Copilot SDK](https://github.com/github/copilot-sdk).
 
 [Back to Top](#top)
 

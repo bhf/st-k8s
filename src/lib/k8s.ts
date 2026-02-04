@@ -15,22 +15,36 @@ import {
   V1Pod
 } from "@kubernetes/client-node";
 
-// Singleton instance for the long-running MCP server,
-// or re-instantiated for stateless API routes.
-const kc = new KubeConfig();
-kc.loadFromDefault();
+// Refactor to lazy-load clients to avoid top-level side effects (like connecting to cluster)
+// during build time import.
+let k8sCoreApi: CoreV1Api | undefined;
+let k8sAppsApi: AppsV1Api | undefined;
+let k8sNetworkingApi: NetworkingV1Api | undefined;
 
-const k8sCoreApi = kc.makeApiClient(CoreV1Api);
-const k8sAppsApi = kc.makeApiClient(AppsV1Api);
-const k8sNetworkingApi = kc.makeApiClient(NetworkingV1Api);
+function getClients() {
+  if (!k8sCoreApi) {
+    const kc = new KubeConfig();
+    kc.loadFromDefault();
+    k8sCoreApi = kc.makeApiClient(CoreV1Api);
+    k8sAppsApi = kc.makeApiClient(AppsV1Api);
+    k8sNetworkingApi = kc.makeApiClient(NetworkingV1Api);
+  }
+  return {
+    core: k8sCoreApi!,
+    apps: k8sAppsApi!,
+    networking: k8sNetworkingApi!,
+  };
+}
 
 export async function getNamespaces() {
-  const nsResp = await k8sCoreApi.listNamespace();
+  const { core } = getClients();
+  const nsResp = await core.listNamespace();
   return (nsResp.items || []).map(ns => ns.metadata?.name || "");
 }
 
 export async function getPods(namespace: string) {
-  const podsResp = await k8sCoreApi.listNamespacedPod({ namespace });
+  const { core } = getClients();
+  const podsResp = await core.listNamespacedPod({ namespace });
   return podsResp.items.flatMap((pod: V1Pod) =>
     (pod.spec?.containers || []).map((container) => {
       const resources = container.resources || {};
@@ -48,8 +62,8 @@ export async function getPods(namespace: string) {
 }
 
 export async function getDeployments(namespace: string) {
-  // @ts-ignore: Client library type mismatch in older versions or specific call signatures
-  const resp = await k8sAppsApi.listNamespacedDeployment({ namespace });
+  const { apps } = getClients();
+  const resp = await apps.listNamespacedDeployment({ namespace });
   return resp.items.map((item: V1Deployment) => ({
     name: item.metadata?.name,
     replicas: item.spec?.replicas,
@@ -61,8 +75,8 @@ export async function getDeployments(namespace: string) {
 }
 
 export async function getServices(namespace: string) {
-  // @ts-ignore
-  const resp = await k8sCoreApi.listNamespacedService({ namespace });
+  const { core } = getClients();
+  const resp = await core.listNamespacedService({ namespace });
   return resp.items.map((item: V1Service) => ({
     name: item.metadata?.name,
     type: item.spec?.type,
@@ -74,8 +88,8 @@ export async function getServices(namespace: string) {
 }
 
 export async function getDaemonSets(namespace: string) {
-  // @ts-ignore
-  const resp = await k8sAppsApi.listNamespacedDaemonSet({ namespace });
+  const { apps } = getClients();
+  const resp = await apps.listNamespacedDaemonSet({ namespace });
   return resp.items.map((item: V1DaemonSet) => ({
     name: item.metadata?.name,
     desired: item.status?.desiredNumberScheduled || 0,
@@ -87,8 +101,8 @@ export async function getDaemonSets(namespace: string) {
 }
 
 export async function getReplicaSets(namespace: string) {
-  // @ts-ignore
-  const resp = await k8sAppsApi.listNamespacedReplicaSet({ namespace });
+  const { apps } = getClients();
+  const resp = await apps.listNamespacedReplicaSet({ namespace });
   return resp.items.map((item: V1ReplicaSet) => ({
     name: item.metadata?.name,
     replicas: item.spec?.replicas || 0,
@@ -99,8 +113,8 @@ export async function getReplicaSets(namespace: string) {
 }
 
 export async function getStatefulSets(namespace: string) {
-  // @ts-ignore
-  const resp = await k8sAppsApi.listNamespacedStatefulSet({ namespace });
+  const { apps } = getClients();
+  const resp = await apps.listNamespacedStatefulSet({ namespace });
   return resp.items.map((item: V1StatefulSet) => ({
     name: item.metadata?.name,
     replicas: item.spec?.replicas || 0,
@@ -110,8 +124,8 @@ export async function getStatefulSets(namespace: string) {
 }
 
 export async function getIngresses(namespace: string) {
-  // @ts-ignore
-  const resp = await k8sNetworkingApi.listNamespacedIngress({ namespace });
+  const { networking } = getClients();
+  const resp = await networking.listNamespacedIngress({ namespace });
   return resp.items.map((item: V1Ingress) => ({
     name: item.metadata?.name,
     class: item.spec?.ingressClassName,
@@ -121,8 +135,8 @@ export async function getIngresses(namespace: string) {
 }
 
 export async function getEndpoints(namespace: string) {
-  // @ts-ignore
-  const resp = await k8sCoreApi.listNamespacedEndpoints({ namespace });
+  const { core } = getClients();
+  const resp = await core.listNamespacedEndpoints({ namespace });
   return resp.items.map((item: V1Endpoints) => ({
     name: item.metadata?.name,
     subsets: item.subsets || [],
@@ -131,8 +145,8 @@ export async function getEndpoints(namespace: string) {
 }
 
 export async function getEvents(namespace: string) {
-  // @ts-ignore
-  const resp = await k8sCoreApi.listNamespacedEvent({ namespace });
+  const { core } = getClients();
+  const resp = await core.listNamespacedEvent({ namespace });
   return resp.items.map((item: CoreV1Event) => ({
     name: item.metadata?.name,
     involvedObject: {
@@ -151,8 +165,8 @@ export async function getEvents(namespace: string) {
 }
 
 export async function getPVCs(namespace: string) {
-  // @ts-ignore
-  const pvcResp = await k8sCoreApi.listNamespacedPersistentVolumeClaim({ namespace });
+  const { core } = getClients();
+  const pvcResp = await core.listNamespacedPersistentVolumeClaim({ namespace });
   return pvcResp.items.map((pvc: V1PersistentVolumeClaim) => ({
     name: pvc.metadata?.name,
     status: pvc.status?.phase,

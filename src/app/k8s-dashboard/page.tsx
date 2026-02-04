@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Sidebar, { ToolType } from "./Sidebar";
 import DashboardContent from "./DashboardContent";
+import ChatComponent from "@/components/ChatComponent";
 
 export default function K8sDashboardPage() {
   const [namespaces, setNamespaces] = useState<string[]>([]);
@@ -32,7 +33,7 @@ export default function K8sDashboardPage() {
   }, []);
 
   return (
-    <div className="flex h-screen w-full bg-background dark:bg-background overflow-hidden">
+    <div className="flex h-screen w-full bg-background dark:bg-background overflow-hidden relative">
         <Sidebar
           namespaces={namespaces}
           selectedNamespace={selectedNamespace}
@@ -47,6 +48,7 @@ export default function K8sDashboardPage() {
             tool={selectedTool}
           />
         </main>
+        <ChatComponent />
     </div>
   );
 }
