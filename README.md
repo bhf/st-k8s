@@ -28,7 +28,7 @@ npm run build
 npm run start
 ```
 
-To use the browser based chat feature make sure you install the [Copilot SDK](https://github.com/github/copilot-sdk).
+To use the browser based chat feature make sure you install the [Copilot CLI](https://github.com/github/copilot-cli).
 
 [Back to Top](#top)
 
