@@ -12,13 +12,16 @@ Integrates with VSCode and Copilot.
 
 ## Table of Contents
 
-- [How to Run](#how-to-run)
-- [API](#api)
-- [Model Context Protocol (MCP) Server](#model-context-protocol-mcp-server)
-  - [Features](#features)
-  - [Running the MCP Server](#running-the-mcp-server)
-  - [Configuring for VSCode](#configuring-for-vscode)
-  - [Configuring for Claude Desktop](#configuring-claude-for-desktop)
+- [ST-K8s](#st-k8s)
+  - [Table of Contents](#table-of-contents)
+  - [How to Run](#how-to-run)
+  - [API](#api)
+  - [Model Context Protocol (MCP) Server](#model-context-protocol-mcp-server)
+    - [Features](#features)
+    - [Running the MCP Server](#running-the-mcp-server)
+    - [Configuring for VSCode](#configuring-for-vscode)
+  - [LLM Integration Techniques](#llm-integration-techniques)
+  - [High Level Architecture](#high-level-architecture)
 
 ## How to Run
 
@@ -106,3 +109,19 @@ Make sure to replace `/absolute/path/to/st-k8s` with the actual path to this rep
 
 [Back to Top](#top)
 
+## LLM Integration Techniques
+
+This project uses several LLM-based techniques to enhance the development lifecycle and user experience. These artifacts are located in the `.github` directory:
+
+*   **Agents**: Domain-specific personas, such as the `Expert Next.js Developer` (`.github/agents/expert-nextjs-developer.agent.md`), which embody specialized knowledge for consistent code generation.
+*   **Instructions**: Contextual guidelines including `copilot-instructions.md` (project overview) and `nextjs-tailwind.instructions.md` that enforce coding standards and architectural patterns.
+*   **Skills**: Reusable capabilities like the `excalidraw-diagram-generator` (`.github/skills/`) that allow the model to perform complex tasks like generating visual diagrams from natural language.
+*   **Prompts**: Curated prompt templates (e.g., `clean-excalidraw.prompt.md`) ensuring high-quality, reproducible outputs for specific tasks.
+
+[Back to Top](#top)
+
+## High Level Architecture
+
+![alt text](docs/architecture.png)
+
+[Back to Top](#top)
