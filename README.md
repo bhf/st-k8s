@@ -9,6 +9,7 @@ Integrates with VSCode and Copilot.
 
 ![img.png](docs/chat_1.png)
 
+Uses [Github Projects](https://github.com/users/bhf/projects/5) for planning and tracking.
 
 ## Table of Contents
 
