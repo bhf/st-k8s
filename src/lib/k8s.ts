@@ -13,7 +13,8 @@ import {
   CoreV1Event,
   V1PersistentVolumeClaim,
   V1Pod,
-  V1Node
+  V1Node,
+  V1ConfigMap
 } from "@kubernetes/client-node";
 
 // Refactor to lazy-load clients to avoid top-level side effects (like connecting to cluster)
@@ -204,4 +205,16 @@ export async function getNodes() {
       created: node.metadata?.creationTimestamp,
     };
   });
+}
+
+export async function getConfigMaps(namespace: string) {
+  const { core } = getClients();
+  const resp = await core.listNamespacedConfigMap({ namespace });
+  return resp.items.map((item: V1ConfigMap) => ({
+    name: item.metadata?.name,
+    namespace: item.metadata?.namespace,
+    dataCount: Object.keys(item.data || {}).length,
+    data: item.data || {},
+    created: item.metadata?.creationTimestamp,
+  }));
 }

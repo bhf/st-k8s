@@ -14,7 +14,8 @@ import {
   getEndpoints,
   getEvents,
   getPVCs,
-  getNodes
+  getNodes,
+  getConfigMaps
 } from "./lib/k8s"; // Using relative path to ensure resolution without extra alias config if needed
 
 const server = new Server(
@@ -156,6 +157,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
         },
       },
+      {
+        name: "list_configmaps",
+        description: "List Kubernetes ConfigMaps in a namespace",
+        inputSchema: {
+          type: "object",
+          properties: {
+            namespace: {
+              type: "string",
+              description: "Kubernetes namespace (default: default)",
+            },
+          },
+        },
+      },
     ],
   };
 });
@@ -256,6 +270,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const nodes = await getNodes();
         return {
           content: [{ type: "text", text: JSON.stringify(nodes, null, 2) }],
+        };
+      }
+
+      case "list_configmaps": {
+        const namespace = getNamespace(args);
+        const configMaps = await getConfigMaps(namespace);
+        return {
+          content: [{ type: "text", text: JSON.stringify(configMaps, null, 2) }],
         };
       }
 
