@@ -32,6 +32,18 @@ npm run build
 npm run start
 ```
 
+### Running Tests
+
+This project uses [Vitest](https://vitest.dev/) for testing.
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm test -- --watch
+```
+
 To use the browser based chat feature make sure you install the [Copilot CLI](https://github.com/github/copilot-cli).
 
 [Back to Top](#top)
