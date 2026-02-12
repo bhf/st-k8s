@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => {
       listNamespacedPod: vi.fn(),
       listNamespacedService: vi.fn(),
       listNode: vi.fn(),
+      listNamespacedConfigMap: vi.fn(),
     },
     appsApi: {
       listNamespacedDeployment: vi.fn(),
@@ -40,7 +41,7 @@ vi.mock('@kubernetes/client-node', async (importOriginal) => {
 })
 
 // Import the module under test
-import { getNamespaces, getPods, getDeployments, getNodes } from '../k8s'
+import { getNamespaces, getPods, getDeployments, getNodes, getConfigMaps } from '../k8s'
 
 describe('k8s library', () => {
   beforeEach(() => {
@@ -155,6 +156,30 @@ describe('k8s library', () => {
         created: '2023-01-01T00:00:00Z'
       })
       expect(mocks.coreApi.listNode).toHaveBeenCalled()
+    })
+  })
+
+  describe('getConfigMaps', () => {
+    it('returns formatted configmaps data', async () => {
+      mocks.coreApi.listNamespacedConfigMap.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: 'cm-1', namespace: 'default', creationTimestamp: '2023-01-01T00:00:00Z' },
+            data: { key1: 'value1', key2: 'value2' }
+          }
+        ]
+      })
+
+      const cms = await getConfigMaps('default')
+      expect(cms).toHaveLength(1)
+      expect(cms[0]).toEqual({
+        name: 'cm-1',
+        namespace: 'default',
+        dataCount: 2,
+        data: { key1: 'value1', key2: 'value2' },
+        created: '2023-01-01T00:00:00Z'
+      })
+      expect(mocks.coreApi.listNamespacedConfigMap).toHaveBeenCalledWith({ namespace: 'default' })
     })
   })
 })
