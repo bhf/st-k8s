@@ -11,7 +11,8 @@ import {
   getIngresses,
   getEndpoints,
   getEvents,
-  getPVCs
+  getPVCs,
+  getNodes
 } from "./k8s";
 
 // Define tools
@@ -134,6 +135,15 @@ const listPVCsTool = defineTool("list_pvcs", {
     }
 });
 
+const listNodesTool = defineTool("list_nodes", {
+    description: "List Kubernetes nodes",
+    parameters: z.object({}),
+    handler: async () => {
+        const nodes = await getNodes();
+        return JSON.stringify(nodes);
+    }
+});
+
 // Singleton client/session management
 // Note: In serverless environment, this might be re-initialized.
 // Ideally, for a robust app, we'd persist session state or use a persistent server.
@@ -161,7 +171,8 @@ export async function getSession() {
         listIngressesTool,
         listEndpointsTool,
         listEventsTool,
-        listPVCsTool
+        listPVCsTool,
+        listNodesTool
     ]
   });
 

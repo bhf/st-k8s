@@ -103,6 +103,7 @@ export default function DashboardContent({ namespace, tool }: DashboardContentPr
           "endpoints": "k8s-endpoints",
           "events": "k8s-events",
           "volumes": "k8s-volumes",
+          "nodes": "k8s-nodes",
         };
 
         const endpoint = endpointMap[tool];

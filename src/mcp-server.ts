@@ -13,7 +13,8 @@ import {
   getIngresses,
   getEndpoints,
   getEvents,
-  getPVCs
+  getPVCs,
+  getNodes
 } from "./lib/k8s"; // Using relative path to ensure resolution without extra alias config if needed
 
 const server = new Server(
@@ -147,6 +148,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
         },
       },
+      {
+        name: "list_nodes",
+        description: "List Kubernetes nodes",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
     ],
   };
 });
@@ -240,6 +249,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const pvcs = await getPVCs(namespace);
         return {
           content: [{ type: "text", text: JSON.stringify(pvcs, null, 2) }],
+        };
+      }
+
+      case "list_nodes": {
+        const nodes = await getNodes();
+        return {
+          content: [{ type: "text", text: JSON.stringify(nodes, null, 2) }],
         };
       }
 
