@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => {
       listNamespace: vi.fn(),
       listNamespacedPod: vi.fn(),
       listNamespacedService: vi.fn(),
+      listNode: vi.fn(),
     },
     appsApi: {
       listNamespacedDeployment: vi.fn(),
@@ -39,7 +40,7 @@ vi.mock('@kubernetes/client-node', async (importOriginal) => {
 })
 
 // Import the module under test
-import { getNamespaces, getPods, getDeployments } from '../k8s'
+import { getNamespaces, getPods, getDeployments, getNodes } from '../k8s'
 
 describe('k8s library', () => {
   beforeEach(() => {
@@ -122,6 +123,38 @@ describe('k8s library', () => {
       expect(deployments[0].name).toBe('deploy-1')
       expect(deployments[0].replicas).toBe(3)
       expect(mocks.appsApi.listNamespacedDeployment).toHaveBeenCalledWith({ namespace: 'default' })
+    })
+  })
+
+  describe('getNodes', () => {
+    it('returns formatted node data', async () => {
+      mocks.coreApi.listNode.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: 'node-1', creationTimestamp: '2023-01-01T00:00:00Z', labels: { 'node-role.kubernetes.io/control-plane': '' } },
+            status: {
+              conditions: [{ type: 'Ready', status: 'True' }],
+              nodeInfo: { kubeletVersion: 'v1.29.0', architecture: 'amd64', operatingSystem: 'linux' },
+              capacity: { cpu: '4', memory: '16Gi' }
+            }
+          }
+        ]
+      })
+
+      const nodes = await getNodes()
+      expect(nodes).toHaveLength(1)
+      expect(nodes[0]).toEqual({
+        name: 'node-1',
+        status: 'Ready',
+        role: 'control-plane',
+        version: 'v1.29.0',
+        cpuCapacity: '4',
+        memoryCapacity: '16Gi',
+        arch: 'amd64',
+        os: 'linux',
+        created: '2023-01-01T00:00:00Z'
+      })
+      expect(mocks.coreApi.listNode).toHaveBeenCalled()
     })
   })
 })

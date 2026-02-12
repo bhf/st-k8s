@@ -12,7 +12,8 @@ import {
   V1Endpoints,
   CoreV1Event,
   V1PersistentVolumeClaim,
-  V1Pod
+  V1Pod,
+  V1Node
 } from "@kubernetes/client-node";
 
 // Refactor to lazy-load clients to avoid top-level side effects (like connecting to cluster)
@@ -176,4 +177,31 @@ export async function getPVCs(namespace: string) {
     storageClass: pvc.spec?.storageClassName,
     created: pvc.metadata?.creationTimestamp,
   }));
+}
+
+export async function getNodes() {
+  const { core } = getClients();
+  const resp = await core.listNode();
+  return resp.items.map((node: V1Node) => {
+    const readyCondition = node.status?.conditions?.find(c => c.type === 'Ready');
+    const isReady = readyCondition?.status === 'True';
+
+    const labels = node.metadata?.labels || {};
+    const roles = Object.keys(labels)
+      .filter(key => key.startsWith('node-role.kubernetes.io/'))
+      .map(key => key.split('/')[1]);
+    const role = roles.length > 0 ? roles.join(', ') : 'worker';
+
+    return {
+      name: node.metadata?.name,
+      status: isReady ? 'Ready' : 'NotReady',
+      role: role,
+      version: node.status?.nodeInfo?.kubeletVersion,
+      cpuCapacity: node.status?.capacity?.cpu,
+      memoryCapacity: node.status?.capacity?.memory,
+      arch: node.status?.nodeInfo?.architecture,
+      os: node.status?.nodeInfo?.operatingSystem,
+      created: node.metadata?.creationTimestamp,
+    };
+  });
 }
