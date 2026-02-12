@@ -163,15 +163,36 @@ const listConfigMapsTool = defineTool("list_configmaps", {
 let client: CopilotClient | null = null;
 type CopilotSession = Awaited<ReturnType<CopilotClient["createSession"]>>;
 let session: CopilotSession | null = null;
+let currentModel: string | null = null;
 
-export async function getSession() {
-  if (session) return session;
+export async function getSession(model: string = "gpt-4o") {
+  console.log(`[CopilotService] getSession called with model: ${model}`);
+  console.log(`[CopilotService] Current active model: ${currentModel}`);
+  
+  if (session && currentModel === model) {
+    console.log(`[CopilotService] Reusing existing session for model: ${model}`);
+    return session;
+  }
+
+  // If we have an existing session but need a different model, destroy the old one
+  if (session) {
+    console.log(`[CopilotService] Destroying old session (model: ${currentModel}) to switch to ${model}`);
+    try {
+      await session.destroy();
+    } catch (err) {
+      console.warn("[CopilotService] Error destroying old session:", err);
+    }
+    session = null;
+  }
+
+  console.log(`[CopilotService] Creating NEW session for model: ${model}`);
 
   if (!client) {
     client = new CopilotClient({ logLevel: "info" });
   }
 
   session = await client.createSession({
+    model,
     tools: [
         listNamespacesTool,
         listPodsTool,
@@ -188,12 +209,14 @@ export async function getSession() {
         listConfigMapsTool
     ]
   });
+  currentModel = model;
+  console.log(`[CopilotService] Session created. currentModel updated to: ${currentModel}`);
 
   return session;
 }
 
-export async function sendMessage(message: string) {
-    const sess = await getSession();
+export async function sendMessage(message: string, model: string = "gpt-4o") {
+    const sess = await getSession(model);
     // Use sendAndWait as per example
     const result = await sess.sendAndWait({ prompt: message });
 
@@ -203,3 +226,22 @@ export async function sendMessage(message: string) {
 
     return result.data.content;
 }
+
+export async function getModels() {
+  if (!client) {
+    client = new CopilotClient({ logLevel: "info" });
+  }
+  
+  try {
+      if (client.getState() === "disconnected") {
+           await client.start();
+      }
+
+      const models = await client.listModels();
+      return models;
+  } catch (error) {
+      console.error("Failed to list models:", error);
+      return [];
+  }
+}
+

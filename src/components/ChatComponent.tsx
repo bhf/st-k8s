@@ -9,7 +9,14 @@ import {
   X,
   MessageCircle,
   Loader2,
+  ChevronDown
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Message type
 type Message = {
@@ -29,6 +36,8 @@ export default function ChatComponent({
   // If controlled, use prop; else manage local state
   const [isOpen, setIsOpen] = useState<boolean>(!!controlledIsOpen);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [model, setModel] = useState("gpt-4o");
+  const [availableModels, setAvailableModels] = useState<{ id: string; name: string }[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +48,26 @@ export default function ChatComponent({
   useEffect(() => {
     if (controlledIsOpen !== undefined) setIsOpen(controlledIsOpen);
   }, [controlledIsOpen]);
+
+  // Fetch available models
+  useEffect(() => {
+    async function fetchModels() {
+      try {
+        const res = await fetch("/api/models");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.models && Array.isArray(data.models)) {
+             setAvailableModels(data.models);
+             // Verify if current default model exists in the list?
+             // Not strictly necessary, but good UX.
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch models", err);
+      }
+    }
+    fetchModels();
+  }, []);
 
   // Auto-scroll to bottom on new message
   useEffect(() => {
@@ -68,7 +97,7 @@ export default function ChatComponent({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg.content }),
+        body: JSON.stringify({ message: userMsg.content, model }),
       });
 
       if (!res.ok) throw new Error("Failed to get response");
@@ -119,15 +148,63 @@ export default function ChatComponent({
           <MessageCircle className="w-5 h-5 text-blue-400" />
           <span className="font-semibold text-white text-lg">ST-K8s Chat</span>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-zinc-400 hover:text-white"
-          onClick={handleToggle}
-          aria-label="Close chat"
-        >
-          <X className="w-5 h-5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 bg-zinc-800 border-zinc-700 text-zinc-200 text-xs px-2 hover:bg-zinc-700 hover:text-white"
+              >
+                {model}
+                <ChevronDown className="h-3 w-3 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-zinc-800 border-zinc-700 text-zinc-200 z-[70] max-h-60 overflow-y-auto">
+              {availableModels.length > 0 ? (
+                availableModels.map((m) => (
+                  <DropdownMenuItem
+                    key={m.id}
+                    onClick={() => setModel(m.id)}
+                    className="focus:bg-zinc-700 focus:text-white cursor-pointer text-xs"
+                  >
+                    {m.name}
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => setModel("gpt-4o")}
+                    className="focus:bg-zinc-700 focus:text-white cursor-pointer text-xs"
+                  >
+                    GPT-4o
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setModel("claude-3.5-sonnet")}
+                    className="focus:bg-zinc-700 focus:text-white cursor-pointer text-xs"
+                  >
+                    Claude 3.5 Sonnet
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setModel("o1-mini")}
+                    className="focus:bg-zinc-700 focus:text-white cursor-pointer text-xs"
+                  >
+                    o1 Mini
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-zinc-400 hover:text-white"
+            onClick={handleToggle}
+            aria-label="Close chat"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
 
       {/* Messages */}
