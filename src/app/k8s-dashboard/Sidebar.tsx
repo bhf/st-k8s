@@ -11,7 +11,8 @@ import {
   Database,
   Globe,
   HardDrive,
-  Cpu
+  Cpu,
+  FileText
 } from "lucide-react";
 import Image from "next/image";
 import {ModeToggle} from "@/components/ui/mode-toggle";
@@ -27,7 +28,8 @@ export type ToolType =
   | "endpoints"
   | "events"
   | "volumes"
-  | "nodes";
+  | "nodes"
+  | "configmaps";
 
 interface SidebarProps {
   namespaces: string[];
@@ -48,6 +50,7 @@ const TOOLS: { id: ToolType; label: string; icon: React.ReactNode }[] = [
   { id: "ingresses", label: "Ingresses", icon: <Globe className="w-4 h-4" /> },
   { id: "endpoints", label: "Endpoints", icon: <Activity className="w-4 h-4" /> },
   { id: "events", label: "Events", icon: <Activity className="w-4 h-4" /> },
+  { id: "configmaps", label: "ConfigMaps", icon: <FileText className="w-4 h-4" /> },
   { id: "volumes", label: "Volumes (PVCs)", icon: <HardDrive className="w-4 h-4" /> },
   { id: "nodes", label: "Nodes", icon: <Cpu className="w-4 h-4" /> },
 ];
