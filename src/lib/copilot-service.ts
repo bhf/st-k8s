@@ -12,7 +12,8 @@ import {
   getEndpoints,
   getEvents,
   getPVCs,
-  getNodes
+  getNodes,
+  getConfigMaps
 } from "./k8s";
 
 // Define tools
@@ -144,6 +145,17 @@ const listNodesTool = defineTool("list_nodes", {
     }
 });
 
+const listConfigMapsTool = defineTool("list_configmaps", {
+    description: "List Kubernetes ConfigMaps in a namespace",
+    parameters: z.object({
+        namespace: z.string().describe("Kubernetes namespace"),
+    }),
+    handler: async ({ namespace }) => {
+        const configMaps = await getConfigMaps(namespace);
+        return JSON.stringify(configMaps);
+    }
+});
+
 // Singleton client/session management
 // Note: In serverless environment, this might be re-initialized.
 // Ideally, for a robust app, we'd persist session state or use a persistent server.
@@ -172,7 +184,8 @@ export async function getSession() {
         listEndpointsTool,
         listEventsTool,
         listPVCsTool,
-        listNodesTool
+        listNodesTool,
+        listConfigMapsTool
     ]
   });
 
