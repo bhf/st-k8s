@@ -42,6 +42,7 @@ The dashboard supports K9s-style keyboard navigation. Press `:` to open the comm
   - [LLM Integration Techniques](#llm-integration-techniques)
   - [High Level Architecture](#high-level-architecture)
   - [Accessibility](#accessibility)
+  - [Security](#security)
 
 ## How to Run
 
@@ -176,4 +177,10 @@ This project uses several LLM-based techniques to enhance the development lifecy
 
 ## Accessibility
 
-We are committed to making the dashboard accessible to all users. Please refer to our [Accessibility Statement and Guidelines](a11y.md) for details on current status, findings, and remediation plans.
+We are committed to making the dashboard accessible to all users. Please refer to our [Accessibility Statement and Guidelines](docs/a11y.md) for details on current status, findings, and remediation plans.
+
+## Security
+
+We take security seriously. Please refer to our [Security Review](docs/security-review.md) for details on our security posture, findings, and recommendations.
+
+[Back to Top](#top)
