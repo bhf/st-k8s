@@ -2,12 +2,15 @@ import {
   KubeConfig,
   CoreV1Api,
   AppsV1Api,
+  BatchV1Api,
   NetworkingV1Api,
   V1Deployment,
   V1Service,
   V1DaemonSet,
   V1ReplicaSet,
   V1StatefulSet,
+  V1Job,
+  V1CronJob,
   V1Ingress,
   V1Endpoints,
   CoreV1Event,
@@ -21,6 +24,7 @@ import {
 // during build time import.
 let k8sCoreApi: CoreV1Api | undefined;
 let k8sAppsApi: AppsV1Api | undefined;
+let k8sBatchApi: BatchV1Api | undefined;
 let k8sNetworkingApi: NetworkingV1Api | undefined;
 
 function getClients() {
@@ -29,11 +33,13 @@ function getClients() {
     kc.loadFromDefault();
     k8sCoreApi = kc.makeApiClient(CoreV1Api);
     k8sAppsApi = kc.makeApiClient(AppsV1Api);
+    k8sBatchApi = kc.makeApiClient(BatchV1Api);
     k8sNetworkingApi = kc.makeApiClient(NetworkingV1Api);
   }
   return {
     core: k8sCoreApi!,
     apps: k8sAppsApi!,
+    batch: k8sBatchApi!,
     networking: k8sNetworkingApi!,
   };
 }
@@ -215,6 +221,35 @@ export async function getConfigMaps(namespace: string) {
     namespace: item.metadata?.namespace,
     dataCount: Object.keys(item.data || {}).length,
     data: item.data || {},
+    created: item.metadata?.creationTimestamp,
+  }));
+}
+
+export async function getJobs(namespace: string) {
+  const { batch } = getClients();
+  const resp = await batch.listNamespacedJob({ namespace });
+  return resp.items.map((item: V1Job) => ({
+    name: item.metadata?.name,
+    completions: item.spec?.completions,
+    parallelism: item.spec?.parallelism,
+    active: item.status?.active || 0,
+    succeeded: item.status?.succeeded || 0,
+    failed: item.status?.failed || 0,
+    startTime: item.status?.startTime,
+    completionTime: item.status?.completionTime,
+    created: item.metadata?.creationTimestamp,
+  }));
+}
+
+export async function getCronJobs(namespace: string) {
+  const { batch } = getClients();
+  const resp = await batch.listNamespacedCronJob({ namespace });
+  return resp.items.map((item: V1CronJob) => ({
+    name: item.metadata?.name,
+    schedule: item.spec?.schedule,
+    suspend: item.spec?.suspend,
+    active: item.status?.active?.length || 0,
+    lastScheduleTime: item.status?.lastScheduleTime,
     created: item.metadata?.creationTimestamp,
   }));
 }

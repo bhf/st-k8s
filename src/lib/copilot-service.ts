@@ -13,7 +13,9 @@ import {
   getEvents,
   getPVCs,
   getNodes,
-  getConfigMaps
+  getConfigMaps,
+  getJobs,
+  getCronJobs
 } from "./k8s";
 
 // Define tools
@@ -156,6 +158,28 @@ const listConfigMapsTool = defineTool("list_configmaps", {
     }
 });
 
+const listJobsTool = defineTool("list_jobs", {
+    description: "List Kubernetes Jobs in a namespace",
+    parameters: z.object({
+        namespace: z.string().describe("Kubernetes namespace"),
+    }),
+    handler: async ({ namespace }) => {
+        const jobs = await getJobs(namespace);
+        return JSON.stringify(jobs);
+    }
+});
+
+const listCronJobsTool = defineTool("list_cronjobs", {
+    description: "List Kubernetes CronJobs in a namespace",
+    parameters: z.object({
+        namespace: z.string().describe("Kubernetes namespace"),
+    }),
+    handler: async ({ namespace }) => {
+        const cronJobs = await getCronJobs(namespace);
+        return JSON.stringify(cronJobs);
+    }
+});
+
 // Singleton client/session management
 // Note: In serverless environment, this might be re-initialized.
 // Ideally, for a robust app, we'd persist session state or use a persistent server.
@@ -206,7 +230,9 @@ export async function getSession(model: string = "gpt-4o") {
         listEventsTool,
         listPVCsTool,
         listNodesTool,
-        listConfigMapsTool
+        listConfigMapsTool,
+        listJobsTool,
+        listCronJobsTool
     ]
   });
   currentModel = model;
