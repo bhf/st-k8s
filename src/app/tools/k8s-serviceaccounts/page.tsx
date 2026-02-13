@@ -47,6 +47,7 @@ function ServiceAccountsFetcher({ namespace }: { namespace: string }) {
   // Use namespace in specific key to refetch
   const { data, error } = useSWR(`/api/tools/k8s-serviceaccounts?namespace=${namespace}`, fetcher, {
     suspense: true,
+    fallbackData: [],
   });
 
   if (error) return <div className="text-red-600">Error: {error.message}</div>;
