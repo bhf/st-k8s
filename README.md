@@ -162,10 +162,17 @@ Make sure to replace `/absolute/path/to/st-k8s` with the actual path to this rep
 
 This project uses several LLM-based techniques to enhance the development lifecycle and user experience. These artifacts are located in the `.github` directory:
 
-*   **Agents**: Domain-specific personas, such as the `Expert Next.js Developer` (`.github/agents/expert-nextjs-developer.agent.md`), which embody specialized knowledge for consistent code generation.
-*   **Instructions**: Contextual guidelines including `copilot-instructions.md` (project overview) and `nextjs-tailwind.instructions.md` that enforce coding standards and architectural patterns.
-*   **Skills**: Reusable capabilities like the `excalidraw-diagram-generator` (`.github/skills/`) that allow the model to perform complex tasks like generating visual diagrams from natural language.
-*   **Prompts**: Curated prompt templates (e.g., `clean-excalidraw.prompt.md`) ensuring high-quality, reproducible outputs for specific tasks.
+*   **Agents**: Domain-specific personas which embody specialized knowledge for consistent code generation.
+    -   [Expert Next.js Developer](.github/agents/expert-nextjs-developer.agent.md)
+*   **Instructions**: Contextual guidelines that enforce coding standards and architectural patterns.
+    -   [Project Overview](.github/copilot-instructions.md)
+    -   [Next.js + Tailwind Standards](.github/instructions/nextjs-tailwind.instructions.md)
+*   **Skills**: Reusable capabilities that allow the model to perform complex tasks.
+    -   [Copilot SDK](.github/skills/copilot-sdk/SKILL.md)
+    -   [Excalidraw Diagram Generator](.github/skills/excalidraw-diagram-generator/SKILL.md)
+*   **Prompts**: Curated prompt templates ensuring high-quality, reproducible outputs for specific tasks.
+    -   [Clean Excalidraw](.github/prompts/clean-excalidraw.prompt.md)
+    -   [Create Issue](.github/prompts/createIssue.prompt.md)
 
 [Back to Top](#top)
 
