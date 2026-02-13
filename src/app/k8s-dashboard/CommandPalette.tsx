@@ -20,7 +20,9 @@ import {
   Activity, 
   FileText, 
   HardDrive, 
-  Cpu 
+  Cpu,
+  Clock,
+  Play
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -48,6 +50,8 @@ const COMMANDS: {
   { cmd: "volumes", alias: ["pvc"], tool: "volumes", label: "Volumes (PVCs)", icon: <HardDrive className="w-4 h-4" /> },
   { cmd: "nodes", alias: ["no"], tool: "nodes", label: "Nodes", icon: <Cpu className="w-4 h-4" /> },
   { cmd: "configmaps", alias: ["cm"], tool: "configmaps", label: "ConfigMaps", icon: <FileText className="w-4 h-4" /> },
+  { cmd: "jobs", alias: ["job"], tool: "jobs", label: "Jobs", icon: <Play className="w-4 h-4" /> },
+  { cmd: "cronjobs", alias: ["cj"], tool: "cronjobs", label: "CronJobs", icon: <Clock className="w-4 h-4" /> },
 ];
 
 export default function CommandPalette({ open, onOpenChange, onSelectTool }: CommandPaletteProps) {

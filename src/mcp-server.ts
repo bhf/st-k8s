@@ -15,7 +15,9 @@ import {
   getEvents,
   getPVCs,
   getNodes,
-  getConfigMaps
+  getConfigMaps,
+  getJobs,
+  getCronJobs
 } from "./lib/k8s"; // Using relative path to ensure resolution without extra alias config if needed
 
 const server = new Server(
@@ -170,6 +172,32 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
         },
       },
+      {
+        name: "list_jobs",
+        description: "List Kubernetes Jobs in a namespace",
+        inputSchema: {
+          type: "object",
+          properties: {
+            namespace: {
+              type: "string",
+              description: "Kubernetes namespace (default: default)",
+            },
+          },
+        },
+      },
+      {
+        name: "list_cronjobs",
+        description: "List Kubernetes CronJobs in a namespace",
+        inputSchema: {
+          type: "object",
+          properties: {
+            namespace: {
+              type: "string",
+              description: "Kubernetes namespace (default: default)",
+            },
+          },
+        },
+      },
     ],
   };
 });
@@ -278,6 +306,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const configMaps = await getConfigMaps(namespace);
         return {
           content: [{ type: "text", text: JSON.stringify(configMaps, null, 2) }],
+        };
+      }
+
+      case "list_jobs": {
+        const namespace = getNamespace(args);
+        const data = await getJobs(namespace);
+        return {
+          content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+        };
+      }
+
+      case "list_cronjobs": {
+        const namespace = getNamespace(args);
+        const data = await getCronJobs(namespace);
+        return {
+          content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
         };
       }
 

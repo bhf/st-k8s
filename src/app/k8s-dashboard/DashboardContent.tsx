@@ -105,6 +105,8 @@ export default function DashboardContent({ namespace, tool }: DashboardContentPr
           "volumes": "k8s-volumes",
           "nodes": "k8s-nodes",
           "configmaps": "k8s-configmaps",
+          "jobs": "k8s-jobs",
+          "cronjobs": "k8s-cronjobs",
         };
 
         const endpoint = endpointMap[tool];
