@@ -12,5 +12,23 @@ export default defineConfig({
     },
     // exclude implementation details like .next folder
     exclude: ['node_modules', '.next', '.git', 'e2e'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'json-summary'],
+      exclude: [
+        'node_modules/',
+        'vitest.setup.ts',
+        'vitest.config.mts',
+        'next.config.ts',
+        'postcss.config.mjs',
+        'tailwind.config.ts',
+        'playwright.config.ts',
+        'eslint.config.mjs',
+        'e2e/',
+        'src/app/layout.tsx', // Next.js layout usually doesn't need unit tests
+        'docs/',
+        'public/',
+      ],
+    },
   },
 })
