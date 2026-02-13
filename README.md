@@ -1,6 +1,10 @@
 <a id="top"></a>
 # ST-K8s
 
+[![Test](https://github.com/bhf/st-k8s/actions/workflows/test.yml/badge.svg)](https://github.com/bhf/st-k8s/actions/workflows/test.yml)
+[![Playwright Tests](https://github.com/bhf/st-k8s/actions/workflows/playwright.yml/badge.svg)](https://github.com/bhf/st-k8s/actions/workflows/playwright.yml)
+[![StayTuned](https://img.shields.io/badge/~%24-StayTuned_-000000?style=flat&labelColor=000000&color=000000)](https://sanjeev.pages.dev)
+
 View and chat to your Kubernetes cluster.
 
 
@@ -16,6 +20,7 @@ Uses [Github Projects](https://github.com/users/bhf/projects/5) for planning and
 - [ST-K8s](#st-k8s)
   - [Table of Contents](#table-of-contents)
   - [How to Run](#how-to-run)
+    - [Running Tests](#running-tests)
   - [API](#api)
   - [Model Context Protocol (MCP) Server](#model-context-protocol-mcp-server)
     - [Features](#features)
