@@ -21,13 +21,15 @@ test.describe('Dashboard Navigation', () => {
       'Ingresses',
       'Endpoints',
       'ConfigMaps',
+      'Jobs',
+      'CronJobs',
       'Volumes (PVCs)',
       'Nodes',
       'Events'
     ];
 
     for (const item of sidebarItems) {
-      await expect(page.getByRole('button', { name: item })).toBeVisible();
+      await expect(page.getByRole('button', { name: item, exact: true })).toBeVisible();
     }
   });
 });
