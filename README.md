@@ -8,16 +8,28 @@
 View and chat to your Kubernetes cluster.
 
 
-Features a dashboard (with a K9s inspired dark theme), REST API, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview). 
+Features a dashboard (with a K9s inspired dark theme and keyboard navigation), REST API, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview). 
 Integrates with VSCode and Copilot.
 
 ![img.png](docs/chat_1.png)
 
 Uses [Github Projects](https://github.com/users/bhf/projects/5) for planning and tracking.
 
+## Keyboard Navigation
+
+The dashboard supports K9s-style keyboard navigation. Press `:` to open the command palette and navigate between resources using commands or aliases:
+
+- `:pods` or `:po`
+- `:deployments` or `:deploy`
+- `:services` or `:svc`
+- ...and many more standard K8s shortcuts.
+
+![alt text](docs/commands.png)
+
 ## Table of Contents
 
 - [ST-K8s](#st-k8s)
+  - [Keyboard Navigation](#keyboard-navigation)
   - [Table of Contents](#table-of-contents)
   - [How to Run](#how-to-run)
     - [Running Tests](#running-tests)

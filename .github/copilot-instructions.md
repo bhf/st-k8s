@@ -3,7 +3,7 @@
 ## Project Overview
 
 A Next.js-based Kubernetes dashboard with three integration modes:
-1. **Web UI** - K9s-inspired dashboard (`src/app/k8s-dashboard`) and individual tool pages (`src/app/tools`)
+1. **Web UI** - K9s-inspired dashboard (`src/app/k8s-dashboard`) with keyboard navigation (`:pods`, `:svc`) and individual tool pages (`src/app/tools`)
 2. **REST API** - OpenAPI endpoints for K8s resources (`src/app/api/tools`)
 3. **MCP Server** - Model Context Protocol server exposing K8s tools to LLMs (`src/mcp-server.ts`)
 
@@ -26,6 +26,7 @@ All three modes share core logic:
 1. **Dashboard** (`app/k8s-dashboard`): Client components fetch data from API routes (`/api/tools/*`) → `lib/k8s.ts` → Cluster.
    - Uses `useEffect` and `fetch` directly.
    - Uses `@tanstack/react-table` for data display.
+   - Uses `CommandPalette` for K9s-style keyboard navigation (global listener on `:`).
 2. **Tools Pages** (`app/tools`): Simpler views for specific resources.
    - Uses `swr` for data fetching.
 

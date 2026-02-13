@@ -4,12 +4,27 @@ import { useEffect, useState } from "react";
 import Sidebar, { ToolType } from "./Sidebar";
 import DashboardContent from "./DashboardContent";
 import ChatComponent from "@/components/ChatComponent";
+import CommandPalette from "./CommandPalette";
 
 export default function K8sDashboardPage() {
   const [namespaces, setNamespaces] = useState<string[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState<string>("default");
   const [selectedTool, setSelectedTool] = useState<ToolType>("pod-resources");
   const [isLoadingNamespaces, setIsLoadingNamespaces] = useState(true);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      // Open on ":" if not typing in an input
+      if (e.key === ":" && !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+      }
+    };
+
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
 
   useEffect(() => {
     async function fetchNamespaces() {
@@ -48,6 +63,12 @@ export default function K8sDashboardPage() {
             tool={selectedTool}
           />
         </main>
+        
+        <CommandPalette 
+          open={isCommandPaletteOpen} 
+          onOpenChange={setIsCommandPaletteOpen} 
+          onSelectTool={setSelectedTool} 
+        />
         <ChatComponent />
     </div>
   );
