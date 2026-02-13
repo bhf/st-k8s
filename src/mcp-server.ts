@@ -17,7 +17,10 @@ import {
   getNodes,
   getConfigMaps,
   getJobs,
-  getCronJobs
+  getCronJobs,
+  getServiceAccounts,
+  getRoles,
+  getRoleBindings
 } from "./lib/k8s"; // Using relative path to ensure resolution without extra alias config if needed
 
 const server = new Server(
@@ -198,6 +201,45 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
         },
       },
+      {
+        name: "list_serviceaccounts",
+        description: "List Kubernetes ServiceAccounts in a namespace",
+        inputSchema: {
+          type: "object",
+          properties: {
+            namespace: {
+              type: "string",
+              description: "Kubernetes namespace (default: default)",
+            },
+          },
+        },
+      },
+      {
+        name: "list_roles",
+        description: "List Kubernetes Roles in a namespace",
+        inputSchema: {
+          type: "object",
+          properties: {
+            namespace: {
+              type: "string",
+              description: "Kubernetes namespace (default: default)",
+            },
+          },
+        },
+      },
+      {
+        name: "list_rolebindings",
+        description: "List Kubernetes RoleBindings in a namespace",
+        inputSchema: {
+          type: "object",
+          properties: {
+            namespace: {
+              type: "string",
+              description: "Kubernetes namespace (default: default)",
+            },
+          },
+        },
+      },
     ],
   };
 });
@@ -322,6 +364,30 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const data = await getCronJobs(namespace);
         return {
           content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+        };
+      }
+
+      case "list_serviceaccounts": {
+        const namespace = getNamespace(args);
+        const serviceAccounts = await getServiceAccounts(namespace);
+        return {
+          content: [{ type: "text", text: JSON.stringify(serviceAccounts, null, 2) }],
+        };
+      }
+
+      case "list_roles": {
+        const namespace = getNamespace(args);
+        const roles = await getRoles(namespace);
+        return {
+          content: [{ type: "text", text: JSON.stringify(roles, null, 2) }],
+        };
+      }
+
+      case "list_rolebindings": {
+        const namespace = getNamespace(args);
+        const roleBindings = await getRoleBindings(namespace);
+        return {
+          content: [{ type: "text", text: JSON.stringify(roleBindings, null, 2) }],
         };
       }
 

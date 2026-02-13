@@ -14,7 +14,8 @@ import {
   Cpu,
   FileText,
   Clock,
-  Play
+  Play,
+  Lock
 } from "lucide-react";
 import Image from "next/image";
 import {ModeToggle} from "@/components/ui/mode-toggle";
@@ -33,7 +34,10 @@ export type ToolType =
   | "nodes"
   | "configmaps"
   | "jobs"
-  | "cronjobs";
+  | "cronjobs"
+  | "serviceaccounts"
+  | "roles"
+  | "rolebindings";
 
 interface SidebarProps {
   namespaces: string[];
@@ -59,6 +63,9 @@ const TOOLS: { id: ToolType; label: string; icon: React.ReactNode }[] = [
   { id: "volumes", label: "Volumes (PVCs)", icon: <HardDrive className="w-4 h-4" /> },
   { id: "nodes", label: "Nodes", icon: <Cpu className="w-4 h-4" /> },
   { id: "events", label: "Events", icon: <Activity className="w-4 h-4" /> },
+  { id: "serviceaccounts", label: "ServiceAccounts", icon: <Lock className="w-4 h-4" /> },
+  { id: "roles", label: "Roles", icon: <Lock className="w-4 h-4" /> },
+  { id: "rolebindings", label: "RoleBindings", icon: <Lock className="w-4 h-4" /> },
 ];
 
 export default function Sidebar({
