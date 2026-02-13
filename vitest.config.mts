@@ -11,6 +11,6 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
     // exclude implementation details like .next folder
-    exclude: ['node_modules', '.next', '.git'],
+    exclude: ['node_modules', '.next', '.git', 'e2e'],
   },
 })
