@@ -49,10 +49,10 @@ const TOOLS: { id: ToolType; label: string; icon: React.ReactNode }[] = [
   { id: "services", label: "Services", icon: <Network className="w-4 h-4" /> },
   { id: "ingresses", label: "Ingresses", icon: <Globe className="w-4 h-4" /> },
   { id: "endpoints", label: "Endpoints", icon: <Activity className="w-4 h-4" /> },
-  { id: "events", label: "Events", icon: <Activity className="w-4 h-4" /> },
   { id: "configmaps", label: "ConfigMaps", icon: <FileText className="w-4 h-4" /> },
   { id: "volumes", label: "Volumes (PVCs)", icon: <HardDrive className="w-4 h-4" /> },
   { id: "nodes", label: "Nodes", icon: <Cpu className="w-4 h-4" /> },
+  { id: "events", label: "Events", icon: <Activity className="w-4 h-4" /> },
 ];
 
 export default function Sidebar({
