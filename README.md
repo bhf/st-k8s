@@ -1,6 +1,7 @@
 <a id="top"></a>
 # ST-K8s
 
+[![Build](https://github.com/bhf/st-k8s/actions/workflows/build.yml/badge.svg)](https://github.com/bhf/st-k8s/actions/workflows/build.yml)
 [![Test](https://github.com/bhf/st-k8s/actions/workflows/test.yml/badge.svg)](https://github.com/bhf/st-k8s/actions/workflows/test.yml)
 [![Playwright Tests](https://github.com/bhf/st-k8s/actions/workflows/playwright.yml/badge.svg)](https://github.com/bhf/st-k8s/actions/workflows/playwright.yml)
 [![StayTuned](https://img.shields.io/badge/~%24-StayTuned_-000000?style=flat&labelColor=000000&color=000000)](https://sanjeev.pages.dev)
