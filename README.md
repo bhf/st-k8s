@@ -33,6 +33,7 @@ The dashboard supports K9s-style keyboard navigation. Press `:` to open the comm
   - [Table of Contents](#table-of-contents)
   - [How to Run](#how-to-run)
     - [Running Tests](#running-tests)
+    - [End-to-End Tests](#end-to-end-tests)
   - [API](#api)
   - [Model Context Protocol (MCP) Server](#model-context-protocol-mcp-server)
     - [Features](#features)
@@ -60,6 +61,15 @@ npm test
 
 # Run tests in watch mode
 npm test -- --watch
+```
+
+### End-to-End Tests
+
+This project uses [Playwright](https://playwright.dev/) for End-to-End testing.
+
+```bash
+# Run E2E tests
+npm run test:e2e
 ```
 
 To use the browser based chat feature make sure you install the [Copilot CLI](https://github.com/github/copilot-cli).
@@ -100,6 +110,13 @@ Exposes read-only Kubernetes operations as tools:
 - `list_endpoints`
 - `list_events`
 - `list_pvcs`
+- `list_nodes`
+- `list_configmaps`
+- `list_jobs`
+- `list_cronjobs`
+- `list_serviceaccounts`
+- `list_roles`
+- `list_rolebindings`
 
 [Back to Top](#top)
 
