@@ -40,6 +40,7 @@ The dashboard supports K9s-style keyboard navigation. Press `:` to open the comm
     - [Configuring for VSCode](#configuring-for-vscode)
   - [LLM Integration Techniques](#llm-integration-techniques)
   - [High Level Architecture](#high-level-architecture)
+  - [Accessibility](#accessibility)
 
 ## How to Run
 
@@ -155,3 +156,7 @@ This project uses several LLM-based techniques to enhance the development lifecy
 ![alt text](docs/architecture.png)
 
 [Back to Top](#top)
+
+## Accessibility
+
+We are committed to making the dashboard accessible to all users. Please refer to our [Accessibility Statement and Guidelines](a11y.md) for details on current status, findings, and remediation plans.
