@@ -49,6 +49,7 @@ function RoleBindingsTable({ data }: { data: RoleBinding[] }) {
 function RoleBindingsFetcher({ namespace }: { namespace: string }) {
   const { data, error } = useSWR(`/api/tools/k8s-rolebindings?namespace=${namespace}`, fetcher, {
     suspense: true,
+    fallbackData: [],
   });
 
   if (error) return <div className="text-red-600">Error: {error.message}</div>;

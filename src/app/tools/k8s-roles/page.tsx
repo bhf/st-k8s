@@ -46,6 +46,7 @@ function RolesTable({ data }: { data: Role[] }) {
 function RolesFetcher({ namespace }: { namespace: string }) {
   const { data, error } = useSWR(`/api/tools/k8s-roles?namespace=${namespace}`, fetcher, {
     suspense: true,
+    fallbackData: [],
   });
 
   if (error) return <div className="text-red-600">Error: {error.message}</div>;
