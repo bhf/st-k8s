@@ -17,7 +17,11 @@ import {
   V1PersistentVolumeClaim,
   V1Pod,
   V1Node,
-  V1ConfigMap
+  V1ConfigMap,
+  RbacAuthorizationV1Api,
+  V1ServiceAccount,
+  V1Role,
+  V1RoleBinding
 } from "@kubernetes/client-node";
 
 // Refactor to lazy-load clients to avoid top-level side effects (like connecting to cluster)
@@ -26,6 +30,7 @@ let k8sCoreApi: CoreV1Api | undefined;
 let k8sAppsApi: AppsV1Api | undefined;
 let k8sBatchApi: BatchV1Api | undefined;
 let k8sNetworkingApi: NetworkingV1Api | undefined;
+let k8sRbacApi: RbacAuthorizationV1Api | undefined;
 
 function getClients() {
   if (!k8sCoreApi) {
@@ -35,12 +40,14 @@ function getClients() {
     k8sAppsApi = kc.makeApiClient(AppsV1Api);
     k8sBatchApi = kc.makeApiClient(BatchV1Api);
     k8sNetworkingApi = kc.makeApiClient(NetworkingV1Api);
+    k8sRbacApi = kc.makeApiClient(RbacAuthorizationV1Api);
   }
   return {
     core: k8sCoreApi!,
     apps: k8sAppsApi!,
     batch: k8sBatchApi!,
     networking: k8sNetworkingApi!,
+    rbac: k8sRbacApi!,
   };
 }
 
@@ -250,6 +257,37 @@ export async function getCronJobs(namespace: string) {
     suspend: item.spec?.suspend,
     active: item.status?.active?.length || 0,
     lastScheduleTime: item.status?.lastScheduleTime,
+    created: item.metadata?.creationTimestamp,
+  }));
+}
+
+export async function getServiceAccounts(namespace: string) {
+  const { core } = getClients();
+  const resp = await core.listNamespacedServiceAccount({ namespace });
+  return resp.items.map((item: V1ServiceAccount) => ({
+    name: item.metadata?.name,
+    secrets: (item.secrets || []).map(s => s.name).join(', '),
+    created: item.metadata?.creationTimestamp,
+  }));
+}
+
+export async function getRoles(namespace: string) {
+  const { rbac } = getClients();
+  const resp = await rbac.listNamespacedRole({ namespace });
+  return resp.items.map((item: V1Role) => ({
+    name: item.metadata?.name,
+    rules: item.rules?.length || 0,
+    created: item.metadata?.creationTimestamp,
+  }));
+}
+
+export async function getRoleBindings(namespace: string) {
+  const { rbac } = getClients();
+  const resp = await rbac.listNamespacedRoleBinding({ namespace });
+  return resp.items.map((item: V1RoleBinding) => ({
+    name: item.metadata?.name,
+    role: item.roleRef.name,
+    subjects: (item.subjects || []).map(s => `${s.kind}/${s.name}`).join(', '),
     created: item.metadata?.creationTimestamp,
   }));
 }

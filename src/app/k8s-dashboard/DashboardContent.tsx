@@ -107,6 +107,9 @@ export default function DashboardContent({ namespace, tool }: DashboardContentPr
           "configmaps": "k8s-configmaps",
           "jobs": "k8s-jobs",
           "cronjobs": "k8s-cronjobs",
+          "serviceaccounts": "k8s-serviceaccounts",
+          "roles": "k8s-roles",
+          "rolebindings": "k8s-rolebindings",
         };
 
         const endpoint = endpointMap[tool];

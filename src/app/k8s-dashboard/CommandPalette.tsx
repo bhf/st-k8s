@@ -22,7 +22,8 @@ import {
   HardDrive, 
   Cpu,
   Clock,
-  Play
+  Play,
+  Lock
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -52,6 +53,9 @@ const COMMANDS: {
   { cmd: "configmaps", alias: ["cm"], tool: "configmaps", label: "ConfigMaps", icon: <FileText className="w-4 h-4" /> },
   { cmd: "jobs", alias: ["job"], tool: "jobs", label: "Jobs", icon: <Play className="w-4 h-4" /> },
   { cmd: "cronjobs", alias: ["cj"], tool: "cronjobs", label: "CronJobs", icon: <Clock className="w-4 h-4" /> },
+  { cmd: "serviceaccounts", alias: ["sa"], tool: "serviceaccounts", label: "ServiceAccounts", icon: <Lock className="w-4 h-4" /> },
+  { cmd: "roles", alias: ["role"], tool: "roles", label: "Roles", icon: <Lock className="w-4 h-4" /> },
+  { cmd: "rolebindings", alias: ["rb"], tool: "rolebindings", label: "RoleBindings", icon: <Lock className="w-4 h-4" /> },
 ];
 
 export default function CommandPalette({ open, onOpenChange, onSelectTool }: CommandPaletteProps) {

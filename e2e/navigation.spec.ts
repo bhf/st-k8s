@@ -25,7 +25,10 @@ test.describe('Dashboard Navigation', () => {
       'CronJobs',
       'Volumes (PVCs)',
       'Nodes',
-      'Events'
+      'Events',
+      'ServiceAccounts',
+      'Roles',
+      'RoleBindings'
     ];
 
     for (const item of sidebarItems) {

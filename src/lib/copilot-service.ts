@@ -15,7 +15,10 @@ import {
   getNodes,
   getConfigMaps,
   getJobs,
-  getCronJobs
+  getCronJobs,
+  getServiceAccounts,
+  getRoles,
+  getRoleBindings
 } from "./k8s";
 
 // Define tools
@@ -180,6 +183,39 @@ const listCronJobsTool = defineTool("list_cronjobs", {
     }
 });
 
+const listServiceAccountsTool = defineTool("list_serviceaccounts", {
+    description: "List Kubernetes ServiceAccounts in a namespace",
+    parameters: z.object({
+        namespace: z.string().describe("Kubernetes namespace"),
+    }),
+    handler: async ({ namespace }) => {
+        const serviceAccounts = await getServiceAccounts(namespace);
+        return JSON.stringify(serviceAccounts);
+    }
+});
+
+const listRolesTool = defineTool("list_roles", {
+    description: "List Kubernetes Roles in a namespace",
+    parameters: z.object({
+        namespace: z.string().describe("Kubernetes namespace"),
+    }),
+    handler: async ({ namespace }) => {
+        const roles = await getRoles(namespace);
+        return JSON.stringify(roles);
+    }
+});
+
+const listRoleBindingsTool = defineTool("list_rolebindings", {
+    description: "List Kubernetes RoleBindings in a namespace",
+    parameters: z.object({
+        namespace: z.string().describe("Kubernetes namespace"),
+    }),
+    handler: async ({ namespace }) => {
+        const roleBindings = await getRoleBindings(namespace);
+        return JSON.stringify(roleBindings);
+    }
+});
+
 // Singleton client/session management
 // Note: In serverless environment, this might be re-initialized.
 // Ideally, for a robust app, we'd persist session state or use a persistent server.
@@ -232,7 +268,10 @@ export async function getSession(model: string = "gpt-4o") {
         listNodesTool,
         listConfigMapsTool,
         listJobsTool,
-        listCronJobsTool
+        listCronJobsTool,
+        listServiceAccountsTool,
+        listRolesTool,
+        listRoleBindingsTool
     ]
   });
   currentModel = model;
