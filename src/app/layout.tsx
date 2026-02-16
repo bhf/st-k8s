@@ -41,15 +41,11 @@ export default function RootLayout({
             position="top-center" 
             toastOptions={{
               className: "font-mono text-xs border-zinc-800 bg-zinc-950 text-zinc-100 shadow-[0_0_15px_rgba(0,0,0,0.5)] rounded-none border-l-4",
-              success: {
-                className: "border-l-green-500",
-              },
-              error: {
-                className: "border-l-red-500",
-              },
-              info: {
-                className: "border-l-[#368dab]",
-              },
+              classNames: {
+                success: "border-l-green-500",
+                error: "border-l-red-500",
+                info: "border-l-[#368dab]",
+              }
             }}
           />
         </Providers>
