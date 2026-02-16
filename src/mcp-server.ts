@@ -20,7 +20,8 @@ import {
   getCronJobs,
   getServiceAccounts,
   getRoles,
-  getRoleBindings
+  getRoleBindings,
+  getPodLogs
 } from "./lib/k8s"; // Using relative path to ensure resolution without extra alias config if needed
 
 const server = new Server(
@@ -240,6 +241,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
         },
       },
+      {
+        name: "get_pod_logs",
+        description: "Get logs for a specific pod and container",
+        inputSchema: {
+          type: "object",
+          properties: {
+            namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            podName: { type: "string", description: "Name of the pod" },
+            containerName: { type: "string", description: "Name of the container (optional)" },
+            tailLines: { type: "number", description: "Number of lines to return from the end of the logs (optional)" },
+            sinceSeconds: { type: "number", description: "How many seconds ago to start logs from (optional)" },
+          },
+          required: ["podName"],
+        },
+      },
     ],
   };
 });
@@ -388,6 +404,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const roleBindings = await getRoleBindings(namespace);
         return {
           content: [{ type: "text", text: JSON.stringify(roleBindings, null, 2) }],
+        };
+      }
+
+      case "get_pod_logs": {
+        const parsed = z.object({
+          namespace: z.string().optional(),
+          podName: z.string(),
+          containerName: z.string().optional(),
+          tailLines: z.number().optional(),
+          sinceSeconds: z.number().optional(),
+        }).safeParse(args);
+
+        if (!parsed.success) {
+          throw new Error("Invalid arguments for get_pod_logs");
+        }
+
+        const { namespace, podName, containerName, tailLines, sinceSeconds } = parsed.data;
+        const logs = await getPodLogs(namespace || "default", podName, containerName, tailLines, sinceSeconds);
+        return {
+          content: [{ type: "text", text: logs }],
         };
       }
 

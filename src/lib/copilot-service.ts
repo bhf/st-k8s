@@ -18,7 +18,8 @@ import {
   getCronJobs,
   getServiceAccounts,
   getRoles,
-  getRoleBindings
+  getRoleBindings,
+  getPodLogs
 } from "./k8s";
 
 // Define tools
@@ -216,6 +217,21 @@ const listRoleBindingsTool = defineTool("list_rolebindings", {
     }
 });
 
+const getPodLogsTool = defineTool("get_pod_logs", {
+    description: "Get logs for a specific pod and container",
+    parameters: z.object({
+        namespace: z.string().optional().describe("Kubernetes namespace (default: default)"),
+        podName: z.string().describe("Name of the pod"),
+        containerName: z.string().optional().describe("Name of the container (optional)"),
+        tailLines: z.number().optional().describe("Number of lines to return from the end of the logs (optional)"),
+        sinceSeconds: z.number().optional().describe("How many seconds ago to start logs from (optional)"),
+    }),
+    handler: async ({ namespace, podName, containerName, tailLines, sinceSeconds }) => {
+        const logs = await getPodLogs(namespace || "default", podName, containerName, tailLines, sinceSeconds);
+        return logs;
+    }
+});
+
 // Singleton client/session management
 // Note: In serverless environment, this might be re-initialized.
 // Ideally, for a robust app, we'd persist session state or use a persistent server.
@@ -271,7 +287,8 @@ export async function getSession(model: string = "gpt-4o") {
         listCronJobsTool,
         listServiceAccountsTool,
         listRolesTool,
-        listRoleBindingsTool
+        listRoleBindingsTool,
+        getPodLogsTool
     ]
   });
   currentModel = model;

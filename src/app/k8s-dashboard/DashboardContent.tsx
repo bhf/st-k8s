@@ -224,7 +224,7 @@ export default function DashboardContent({ namespace, tool }: DashboardContentPr
               ))}
             </div>
           ) : (
-            <ResourceTable data={data} />
+            <ResourceTable data={data} tool={tool} namespace={namespace} />
           )}
         </>
       )}
@@ -232,7 +232,7 @@ export default function DashboardContent({ namespace, tool }: DashboardContentPr
   );
 }
 
-function ResourceTable({ data }: { data: Record<string, unknown>[] }) {
+function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown>[], tool?: ToolType, namespace?: string }) {
   if (data.length === 0) return null;
 
   // Determine columns from ALL items to handle sparse data
@@ -252,7 +252,7 @@ function ResourceTable({ data }: { data: Record<string, unknown>[] }) {
     const otherCols = cols.filter((c) => !c.toLowerCase().includes("name"));
     const sortedColumns = [...nameCols, ...otherCols];
 
-    return sortedColumns.map((key) => ({
+    const baseCols: ColumnDef<Record<string, unknown>>[] = sortedColumns.map((key) => ({
       accessorKey: key,
       header: key,
       cell: (info) => {
@@ -261,11 +261,47 @@ function ResourceTable({ data }: { data: Record<string, unknown>[] }) {
           if (Object.keys(val).length === 0) return "";
           return JSON.stringify(val);
         }
+        if (key === 'status') {
+           const status = String(val);
+           return (
+             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+               status === 'Running' || status === 'Active' || status === 'Succeeded' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+               status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
+               'bg-red-500/10 text-red-500 border border-red-500/20'
+             }`}>
+               {status}
+             </span>
+           );
+        }
         return String(val);
       },
       size: 150,
     }));
-  }, [data]);
+
+    if (tool === 'pod-resources' && namespace) {
+       baseCols.push({
+         id: 'actions',
+         header: 'Actions',
+         cell: (info) => {
+           const row = info.row.original;
+           const podName = String(row.podName || '');
+           const containerName = String(row.containerName || '');
+           return (
+             <a 
+               href={`/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}`}
+               className="text-blue-500 hover:text-blue-400 text-xs font-semibold underline underline-offset-2"
+               target="_blank"
+             >
+               View Logs
+             </a>
+           );
+         },
+         size: 100
+       });
+    }
+
+    return baseCols;
+  }, [data, tool, namespace]);
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
   const table = useReactTable({
