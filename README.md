@@ -34,6 +34,7 @@ The dashboard supports K9s-style keyboard navigation. Press `:` to open the comm
   - [Keyboard Navigation](#keyboard-navigation)
   - [Table of Contents](#table-of-contents)
   - [How to Run](#how-to-run)
+    - [Using the `st-k8s` CLI](#using-the-st-k8s-cli)
     - [Running Tests](#running-tests)
     - [End-to-End Tests](#end-to-end-tests)
   - [API](#api)
@@ -53,6 +54,26 @@ git clone https://github.com/bhf/st-k8s
 npm run build
 npm run start
 ```
+
+### Using the `st-k8s` CLI
+
+You can install the project as a global CLI to run the app using the `st-k8s` command.
+
+```bash
+# From the repo root — install globally (or publish and install from a registry)
+npm install -g .
+
+# During development, link the local package to make `st-k8s` available globally
+npm link
+
+# Then launch the app with the CLI (it will build if no build exists)
+st-k8s
+```
+
+Notes:
+- `npm install -g .` requires appropriate permissions (use `sudo` on some systems).
+- `npm link` is useful when iterating locally — run it once from the repo root.
+- The `st-k8s` command will attempt to use a Next.js standalone server if present (from `next build`), otherwise it runs `npm run start`.
 
 ### Running Tests
 

@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+const { spawnSync } = require('child_process');
+const { existsSync } = require('fs');
+const path = require('path');
+
+function printBanner() {
+  const banner = [
+    ' /\/|_    _____ _            _____                    _          ',
+    '|/\/| |  /  ___| |          |_   _|                  | |         ',
+    '   / __) \\ `--.| |_ __ _ _   _| |_   _ _ __   ___  __| |         ',
+    "   \\__ \\  `--. \\ __/ _` | | | | | | | | '_ \ / _ \/ _` |         ",
+    "   (   / /\\__/ / || (_| | |_| | | |_| | | | |  __/ (_| |         ",
+    "    |_|  \\____/ \\__\\__,_|\\__, \\_/\\__,_|_| |_|\\___|\\__,_|         ",
+    "                          __/ |                           ______ ",
+    "                         |___/                           |______|",
+    '',
+    '  GitHub: https://github.com/bhf',
+    ''
+  ].join('\n');
+
+  console.log(banner);
+}
+
+function run(cmd, args) {
+  const res = spawnSync(cmd, args, { stdio: 'inherit' });
+  if (res.error) {
+    console.error(res.error);
+    process.exit(1);
+  }
+  if (res.status !== 0) process.exit(res.status || 1);
+}
+
+const root = process.cwd();
+const standaloneServer = path.join(root, '.next', 'standalone', 'server.js');
+
+// Print banner on launch
+printBanner();
+
+// Build if needed
+if (!existsSync(path.join(root, '.next'))) {
+  console.log('No build detected — running `npm run build`...');
+  run('npm', ['run', 'build']);
+}
+
+// Prefer standalone server if present
+if (existsSync(standaloneServer)) {
+  console.log('Starting standalone server...');
+  run('node', [standaloneServer]);
+} else {
+  console.log('Starting Next.js production server (`npm run start`)...');
+  run('npm', ['run', 'start']);
+}

@@ -2,6 +2,9 @@
   "name": "st-k8s",
   "version": "0.1.0",
   "private": true,
+  "bin": {
+    "st-k8s": "bin/st-k8s"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
