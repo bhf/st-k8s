@@ -21,8 +21,10 @@ import {
   RbacAuthorizationV1Api,
   V1ServiceAccount,
   V1Role,
-  V1RoleBinding
+  V1RoleBinding,
+  Log,
 } from "@kubernetes/client-node";
+import { Writable } from "node:stream";
 
 // Refactor to lazy-load clients to avoid top-level side effects (like connecting to cluster)
 // during build time import.
@@ -290,4 +292,31 @@ export async function getRoleBindings(namespace: string) {
     subjects: (item.subjects || []).map(s => `${s.kind}/${s.name}`).join(', '),
     created: item.metadata?.creationTimestamp,
   }));
+}
+
+export async function getPodLogs(namespace: string, podName: string, containerName?: string, tailLines?: number, sinceSeconds?: number) {
+  const { core } = getClients();
+  // Using the core API to get logs as a string
+  const res = await core.readNamespacedPodLog({
+    name: podName,
+    namespace: namespace,
+    container: containerName,
+    tailLines: tailLines,
+    sinceSeconds: sinceSeconds,
+  });
+  return res;
+}
+
+export async function getPodLogStream(namespace: string, podName: string, containerName: string, stream: Writable, tailLines?: number, sinceSeconds?: number) {
+  const kc = new KubeConfig();
+  kc.loadFromDefault();
+  const log = new Log(kc);
+  
+  return log.log(namespace, podName, containerName, stream, { 
+    follow: true, 
+    tailLines: tailLines,
+    sinceSeconds: sinceSeconds,
+    pretty: false,
+    timestamps: true
+  });
 }
