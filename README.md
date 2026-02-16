@@ -29,10 +29,17 @@ The dashboard supports K9s-style keyboard navigation. Press `:` to open the comm
 
 ![alt text](docs/commands.png)
 
+## Log Viewer
+
+View, copy and download streaming logs.
+
+![alt text](docs/logview.png)
+
 ## Table of Contents
 
 - [ST-K8s](#st-k8s)
   - [Keyboard Navigation](#keyboard-navigation)
+  - [Log Viewer](#log-viewer)
   - [Table of Contents](#table-of-contents)
   - [How to Run](#how-to-run)
     - [Using the `st-k8s` CLI](#using-the-st-k8s-cli)
@@ -117,6 +124,7 @@ This project includes an MCP server that exposes Kubernetes tools to LLMs over s
 * List of pods
 * Rank containers by their memory requests and limits
 * Summary of the last events in the namespace
+* Get the last 100 lines of logs for a specific pod
 
 ![img_1.png](docs/img_1.png)
 
@@ -145,6 +153,7 @@ Exposes read-only Kubernetes operations as tools:
 - `list_serviceaccounts`
 - `list_roles`
 - `list_rolebindings`
+- `get_pod_logs`
 
 [Back to Top](#top)
 
