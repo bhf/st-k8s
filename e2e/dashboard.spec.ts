@@ -1,9 +1,20 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('K8s Dashboard Functionality', () => { 
+  test.beforeEach(async ({ page }) => {
+    // Mock general K8s metadata needed for the dashboard to initialize
+    await page.route('*/**/api/tools/k8s-contexts*', async route => {
+      await route.fulfill({ json: { data: [{ name: 'default', isCurrent: true }] } });
+    });
+    
+    await page.route('*/**/api/tools/k8s-namespaces*', async route => {
+      await route.fulfill({ json: { namespaces: ['default'] } });
+    });
+  });
+
   test('should fetch and display pod resources', async ({ page }) => {
     // Mock the API response for pod resources
-    await page.route('*/**/api/tools/k8s-pod-resources?namespace=default', async route => {
+    await page.route('*/**/api/tools/k8s-pod-resources*', async route => {
       const json = {
         data: [
           {
@@ -23,7 +34,7 @@ test.describe('K8s Dashboard Functionality', () => {
       await route.fulfill({ json });
     });
 
-    await page.goto('/k8s-dashboard?tool=pod-resources');
+    await page.goto('/k8s-dashboard');
 
     // Verify loading state is gone and table is present
     // Note: Depends on actual loading implementation, assuming it eventually shows data

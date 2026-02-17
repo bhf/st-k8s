@@ -1,6 +1,17 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Chat Component', () => {
+  test.beforeEach(async ({ page }) => {
+    // Mock general K8s metadata needed for dashboard/chat components to initialize
+    await page.route('*/**/api/tools/k8s-contexts*', async route => {
+      await route.fulfill({ json: { data: [{ name: 'default', isCurrent: true }] } });
+    });
+
+    await page.route('*/**/api/tools/k8s-namespaces*', async route => {
+      await route.fulfill({ json: { namespaces: ['default'] } });
+    });
+  });
+
   test('should open and close the chat window', async ({ page }) => {
     await page.goto('/k8s-dashboard');
 
