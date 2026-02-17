@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import DashboardContent from '../DashboardContent'
+import { RefreshProvider } from '@/lib/refresh-context'
 import React from 'react'
 
 // Mock fetch global
@@ -26,17 +27,35 @@ describe('DashboardContent', () => {
         ]
       })
     })
+    // Mock localStorage
+    const localStorageMock = (() => {
+      let store: Record<string, string> = {}
+      return {
+        getItem: (key: string) => store[key] || null,
+        setItem: (key: string, value: string) => { store[key] = value.toString() },
+        clear: () => { store = {} }
+      }
+    })()
+    Object.defineProperty(window, 'localStorage', { value: localStorageMock })
   })
 
+  const renderWithProvider = (ui: React.ReactElement) => {
+    return render(
+      <RefreshProvider>
+        {ui}
+      </RefreshProvider>
+    )
+  }
+
   it('renders loading state initially', () => {
-    render(<DashboardContent namespace="default" tool="pod-resources" />)
+    renderWithProvider(<DashboardContent namespace="default" tool="pod-resources" />)
     // It might be too fast to catch loading, but let's try
     // Or just check that it triggers a fetch
     expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/tools/k8s-pod-resources?namespace=default'))
   })
 
   it('renders table with data after fetch', async () => {
-    render(<DashboardContent namespace="default" tool="pod-resources" />)
+    renderWithProvider(<DashboardContent namespace="default" tool="pod-resources" />)
 
     await waitFor(() => {
       expect(screen.getByText('pod-1')).toBeInTheDocument()
@@ -52,7 +71,7 @@ describe('DashboardContent', () => {
       json: async () => ({ error: 'Failed to fetch' })
     })
 
-    render(<DashboardContent namespace="default" tool="pod-resources" />)
+    renderWithProvider(<DashboardContent namespace="default" tool="pod-resources" />)
 
     await waitFor(() => {
       expect(screen.getByText(/Error: Failed to fetch/i)).toBeInTheDocument()
