@@ -53,29 +53,48 @@ export default function K8sDashboardPage() {
   }, []);
 
   useEffect(() => {
+    let ignore = false;
     async function fetchNamespaces() {
+      if (!selectedContext) return;
+      
       setIsLoadingNamespaces(true);
       try {
         const url = new URL("/api/tools/k8s-namespaces", window.location.origin);
-        if (selectedContext) {
-          url.searchParams.set("context", selectedContext);
-        }
+        url.searchParams.set("context", selectedContext);
+        
         const res = await fetch(url.toString());
+        if (!res.ok) throw new Error("Failed to fetch namespaces");
+        
         const data = await res.json();
+        if (ignore) return;
+
         if (data.namespaces) {
           setNamespaces(data.namespaces);
-          if (data.namespaces.length > 0 && !data.namespaces.includes(selectedNamespace)) {
-             setSelectedNamespace(data.namespaces[0]);
+          
+          // AC: If previously selected namespace doesn't exist, default to 'default' or first in list
+          const hasCurrent = data.namespaces.includes(selectedNamespace);
+          const hasDefault = data.namespaces.includes("default");
+          
+          if (!hasCurrent) {
+            if (hasDefault) {
+              setSelectedNamespace("default");
+            } else if (data.namespaces.length > 0) {
+              setSelectedNamespace(data.namespaces[0]);
+            }
           }
         }
       } catch (e) {
-        console.error("Failed to fetch namespaces", e);
+        if (!ignore) {
+          console.error("Failed to fetch namespaces", e);
+          setNamespaces([]);
+        }
       } finally {
-        setIsLoadingNamespaces(false);
+        if (!ignore) setIsLoadingNamespaces(false);
       }
     }
 
     fetchNamespaces();
+    return () => { ignore = true; };
   }, [selectedContext]);
 
   return (

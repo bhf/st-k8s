@@ -40,15 +40,23 @@ type K8sClients = {
 const clientsCache = new Map<string, K8sClients>();
 
 function getClients(context?: string): K8sClients {
-  const cacheKey = context || 'default';
+  const kc = new KubeConfig();
+  kc.loadFromDefault();
+  
+  // If no context provided, use current context from kubeconfig
+  const effectiveContext = context || kc.getCurrentContext();
+  const cacheKey = effectiveContext;
+
   if (clientsCache.has(cacheKey)) {
     return clientsCache.get(cacheKey)!;
   }
 
-  const kc = new KubeConfig();
-  kc.loadFromDefault();
-  if (context && context !== 'default') {
-    kc.setCurrentContext(context);
+  if (effectiveContext) {
+    try {
+      kc.setCurrentContext(effectiveContext);
+    } catch (e) {
+      console.error(`Failed to set context to ${effectiveContext}, falling back to default`, e);
+    }
   }
 
   const clients: K8sClients = {
