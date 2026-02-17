@@ -19,8 +19,23 @@ jobs:
         node-version: lts/*
     - name: Install dependencies
       run: npm ci
+    - name: Get Playwright version
+      id: playwright-version
+      run: echo "VPW=$(npm list @playwright/test | grep @playwright/test | awk -F@ '{print $NF}')" >> $GITHUB_ENV
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ env.VPW }}
+        restore-keys: |
+          ${{ runner.os }}-playwright-
     - name: Install Playwright Browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: npx playwright install --with-deps
+    - name: Install Playwright dependencies (if cache hit)
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      run: npx playwright install-deps
     - name: Run Playwright tests
       run: npx playwright test
     - uses: actions/upload-artifact@v4
