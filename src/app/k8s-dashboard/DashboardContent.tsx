@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToolType } from "./Sidebar";
 import { Grid, List, Download } from "lucide-react";
+import { RefreshSelector } from "@/components/RefreshSelector";
+import { useRefresh } from "@/lib/refresh-context";
 import {
   Table,
   TableBody,
@@ -31,6 +33,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
+  const { autoRefresh, interval, triggerRefresh, setLastUpdated } = useRefresh();
 
   const downloadCSV = () => {
     if (!data || data.length === 0) return;
@@ -84,89 +87,106 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
     document.body.removeChild(link);
   };
 
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchData() {
-      if (!namespace && tool !== "nodes") return;
+  const fetchData = useCallback(async () => {
+    if (!namespace && tool !== "nodes") return;
 
-      setLoading(true);
-      setError(null);
-      setData([]);
+    setLoading(true);
+    setError(null);
 
-      try {
-        const endpointMap: Record<ToolType, string> = {
-          "pod-resources": "k8s-pod-resources",
-          "deployments": "k8s-deployments",
-          "replicasets": "k8s-replicasets",
-          "statefulsets": "k8s-statefulsets",
-          "daemonsets": "k8s-daemonsets",
-          "services": "k8s-services",
-          "ingresses": "k8s-ingresses",
-          "endpoints": "k8s-endpoints",
-          "events": "k8s-events",
-          "volumes": "k8s-volumes",
-          "nodes": "k8s-nodes",
-          "configmaps": "k8s-configmaps",
-          "jobs": "k8s-jobs",
-          "cronjobs": "k8s-cronjobs",
-          "serviceaccounts": "k8s-serviceaccounts",
-          "roles": "k8s-roles",
-          "rolebindings": "k8s-rolebindings",
-        };
+    try {
+      const endpointMap: Record<ToolType, string> = {
+        "pod-resources": "k8s-pod-resources",
+        "deployments": "k8s-deployments",
+        "replicasets": "k8s-replicasets",
+        "statefulsets": "k8s-statefulsets",
+        "daemonsets": "k8s-daemonsets",
+        "services": "k8s-services",
+        "ingresses": "k8s-ingresses",
+        "endpoints": "k8s-endpoints",
+        "events": "k8s-events",
+        "volumes": "k8s-volumes",
+        "nodes": "k8s-nodes",
+        "configmaps": "k8s-configmaps",
+        "jobs": "k8s-jobs",
+        "cronjobs": "k8s-cronjobs",
+        "serviceaccounts": "k8s-serviceaccounts",
+        "roles": "k8s-roles",
+        "rolebindings": "k8s-rolebindings",
+      };
 
-        const endpoint = endpointMap[tool];
-        const url = new URL(`/api/tools/${endpoint}`, window.location.origin);
-        if (namespace) {
-          url.searchParams.set("namespace", namespace);
-        }
-        if (context) {
-          url.searchParams.set("context", context);
-        }
+      const endpoint = endpointMap[tool];
+      const url = new URL(`/api/tools/${endpoint}`, window.location.origin);
+      if (namespace) {
+        url.searchParams.set("namespace", namespace);
+      }
+      if (context) {
+        url.searchParams.set("context", context);
+      }
 
-        const res = await fetch(url.toString());
+      const res = await fetch(url.toString());
 
-        if (!res.ok) {
-          throw new Error(`Failed to fetch ${tool}: ${res.statusText}`);
-        }
+      if (!res.ok) {
+        throw new Error(`Failed to fetch ${tool}: ${res.statusText}`);
+      }
 
-        const json = await res.json();
+      const json = await res.json();
 
-        if (!isMounted) return;
-
-        // Handle different response structures
-        if (json.data) {
-          setData(Array.isArray(json.data) ? json.data : [json.data]);
-        } else if (Array.isArray(json)) {
-          setData(json);
-        } else if (json.items) {
-          setData(json.items);
+      // Handle different response structures
+      let newData: Record<string, unknown>[] = [];
+      if (json.data) {
+        newData = Array.isArray(json.data) ? json.data : [json.data];
+      } else if (Array.isArray(json)) {
+        newData = json;
+      } else if (json.items) {
+        newData = json.items;
+      } else {
+        // Fallback logic
+        const keys = Object.keys(json);
+        const arrayKey = keys.find(k => Array.isArray(json[k]));
+        if (arrayKey) {
+          newData = json[arrayKey];
         } else {
-          // Fallback logic
-          const keys = Object.keys(json);
-          const arrayKey = keys.find(k => Array.isArray(json[k]));
-          if (arrayKey) {
-            setData(json[arrayKey]);
-          } else {
-             setData([]);
-             console.warn("Could not find array data in response", json);
-          }
-        }
-      } catch (err: unknown) {
-        if (!isMounted) return;
-        const message = err instanceof Error ? err.message : "An unknown error occurred";
-        setError(message);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
+           newData = [];
+           console.warn("Could not find array data in response", json);
         }
       }
+      setData(newData);
+      setLastUpdated(new Date());
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An unknown error occurred";
+      setError(message);
+    } finally {
+      setLoading(false);
     }
+  }, [namespace, context, tool, setLastUpdated]);
 
+  useEffect(() => {
     fetchData();
-    return () => {
-      isMounted = false;
+  }, [fetchData, triggerRefresh]);
+
+  // Auto-refresh polling
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
+    }, interval * 1000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
     };
-  }, [namespace, context, tool]);
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [autoRefresh, interval, fetchData]);
 
   return (
     <div className="p-6 h-full overflow-y-auto">
@@ -183,6 +203,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <RefreshSelector />
           <div className="flex items-center border rounded-md overflow-hidden bg-background">
             <Button
               variant={viewMode === "grid" ? "secondary" : "ghost"}
@@ -203,9 +224,6 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
               <List className="h-4 w-4" />
             </Button>
           </div>
-          <Button variant="outline" onClick={() => window.location.reload()} size="sm">
-            Refresh
-          </Button>
           <Button variant="outline" onClick={downloadCSV} size="sm" disabled={data.length === 0 || loading}>
             <Download className="h-4 w-4 mr-2" />
             CSV
@@ -326,6 +344,10 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
     data,
     columns,
     columnResizeMode: "onChange",
+    getRowId: (row, index) => {
+       const id = String(row.name || row.podName || (row.metadata as any)?.name || index);
+       return id;
+    },
     getCoreRowModel: getCoreRowModel(),
   });
 

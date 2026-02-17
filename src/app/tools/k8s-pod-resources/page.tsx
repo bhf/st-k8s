@@ -4,6 +4,8 @@ import { useState } from "react";
 import useSWR from "swr";
 import Image from "next/image";
 import { ModeToggle } from "@/components/ui/mode-toggle";
+import { RefreshSelector } from "@/components/RefreshSelector";
+import { useRefresh } from "@/lib/refresh-context";
 
 function fetcher(url: string) {
   return fetch(url).then((res) => res.json());
@@ -70,11 +72,20 @@ function PodResourcesTable({ data, namespace }: { data: PodResource[], namespace
 }
 
 function PodResourcesFetcher({ namespace }: { namespace: string }) {
-  const { data, error, isLoading } = useSWR(`/api/tools/k8s-pod-resources?namespace=${namespace}`, fetcher);
+  const { autoRefresh, interval, triggerRefresh, setLastUpdated } = useRefresh();
+  
+  const { data, error, isLoading } = useSWR(
+    `/api/tools/k8s-pod-resources?namespace=${namespace}&t=${triggerRefresh}`, 
+    fetcher,
+    {
+      refreshInterval: autoRefresh ? interval * 1000 : 0,
+      onSuccess: () => setLastUpdated(new Date()),
+    }
+  );
 
-  if (isLoading) return <div className="text-gray-500">Loading pod resources...</div>;
-  if (error) return <div className="text-red-600">Error: {error.message}</div>;
-  if (!data || !data.data) return <div>No data found.</div>;
+  if (isLoading) return <div className="text-gray-500 italic">Fetching resources...</div>;
+  if (error) return <div className="text-red-600 font-mono text-sm p-4 bg-red-50 rounded border border-red-200">Error: {error.message}</div>;
+  if (!data || !data.data) return <div className="text-zinc-500 py-8">No pods found in namespace "{namespace}".</div>;
   return <PodResourcesTable data={data.data} namespace={namespace} />;
 }
 
@@ -121,7 +132,10 @@ export default function K8sPodResourcesPage() {
             ~$ ST-K8s_
           </span>
         </div>
-        <ModeToggle />
+        <div className="flex items-center gap-2">
+          <RefreshSelector />
+          <ModeToggle />
+        </div>
       </header>
 
       <main className="flex-1 p-8 flex flex-col items-center">

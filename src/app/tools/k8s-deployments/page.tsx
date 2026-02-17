@@ -2,6 +2,9 @@
 
 import { useState, Suspense } from "react";
 import useSWR from "swr";
+import { RefreshSelector } from "@/components/RefreshSelector";
+import { useRefresh } from "@/lib/refresh-context";
+import { ModeToggle } from "@/components/ui/mode-toggle";
 
 function fetcher(url: string) {
   return fetch(url).then((res) => res.json());
@@ -50,10 +53,17 @@ function DeploymentsTable({ data }: { data: Deployment[] }) {
 }
 
 function DeploymentsFetcher({ namespace }: { namespace: string }) {
-  const { data, error } = useSWR(`/api/tools/k8s-deployments?namespace=${namespace}`, fetcher, {
+  const { autoRefresh, interval, triggerRefresh, setLastUpdated } = useRefresh();
+  const { data, error } = useSWR(
+    `/api/tools/k8s-deployments?namespace=${namespace}&t=${triggerRefresh}`, 
+    fetcher, 
+    {
       suspense: true,
-      fallbackData: { data: [] }
-  });
+      fallbackData: { data: [] },
+      refreshInterval: autoRefresh ? interval * 1000 : 0,
+      onSuccess: () => setLastUpdated(new Date()),
+    }
+  );
   if (error) return <div className="text-red-600">Error: {error.message}</div>;
   if (!data || !data.data) return <div>No data found.</div>;
   return <DeploymentsTable data={data.data} />;
@@ -88,9 +98,18 @@ export default function K8sDeploymentsPage() {
   const [fetchKey, setFetchKey] = useState(0);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-4xl flex-col gap-8 p-8 bg-white dark:bg-zinc-900 rounded-xl shadow-lg">
-        <h1 className="text-3xl font-bold mb-2 text-black dark:text-white">K8s Deployments</h1>
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black p-4">
+      <main className="flex w-full max-w-4xl flex-col gap-8 p-8 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border dark:border-zinc-800">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold mb-2 text-black dark:text-white">K8s Deployments</h1>
+            <p className="text-zinc-500 dark:text-zinc-400 text-sm italic">Manage and monitor cluster deployments</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <RefreshSelector />
+            <ModeToggle />
+          </div>
+        </div>
         <form
           className="flex gap-4 items-end"
           onSubmit={e => {
@@ -120,4 +139,3 @@ export default function K8sDeploymentsPage() {
     </div>
   );
 }
-
