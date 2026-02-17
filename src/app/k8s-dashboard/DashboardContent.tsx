@@ -85,6 +85,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
   };
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchData() {
       if (!namespace && tool !== "nodes") return;
 
@@ -130,6 +131,8 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
 
         const json = await res.json();
 
+        if (!isMounted) return;
+
         // Handle different response structures
         if (json.data) {
           setData(Array.isArray(json.data) ? json.data : [json.data]);
@@ -149,14 +152,20 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
           }
         }
       } catch (err: unknown) {
+        if (!isMounted) return;
         const message = err instanceof Error ? err.message : "An unknown error occurred";
         setError(message);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
     fetchData();
+    return () => {
+      isMounted = false;
+    };
   }, [namespace, context, tool]);
 
   return (
@@ -372,11 +381,6 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           </TableBody>
         </Table>
       </div>
-      <style jsx global>{`
-        th:hover .cursor-col-resize {
-            opacity: 1;
-        }
-      `}</style>
       <style jsx global>{`
         th:hover .cursor-col-resize {
             opacity: 1;

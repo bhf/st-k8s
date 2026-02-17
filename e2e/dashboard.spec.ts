@@ -10,6 +10,10 @@ test.describe('K8s Dashboard Functionality', () => {
     await page.route('*/**/api/tools/k8s-namespaces*', async route => {
       await route.fulfill({ json: { namespaces: ['default'] } });
     });
+
+    await page.route('*/**/api/models*', async route => {
+      await route.fulfill({ json: { models: [{ id: 'gpt-4o', name: 'GPT-4o' }] } });
+    });
   });
 
   test('should fetch and display pod resources', async ({ page }) => {
@@ -60,12 +64,29 @@ test.describe('K8s Dashboard Functionality', () => {
       await route.fulfill({ json: { namespaces: ['prod-ns'] } });
     });
 
-    await page.route('*/**/api/tools/k8s-pod-resources?namespace=prod-ns&context=prod-cluster*', async route => {
-      await route.fulfill({ 
-        json: { 
-          data: [{ name: 'prod-pod', namespace: 'prod-ns', status: 'Running', node: 'prod-node' }] 
-        } 
-      });
+    await page.route('*/**/api/tools/k8s-pod-resources*', async route => {
+      const url = new URL(route.request().url());
+      const ns = url.searchParams.get('namespace');
+      const ctx = url.searchParams.get('context');
+
+      if (ctx === 'prod-cluster' && ns === 'prod-ns') {
+        await route.fulfill({ 
+          json: { 
+            data: [{ name: 'prod-pod', namespace: 'prod-ns', status: 'Running', node: 'prod-node' }] 
+          } 
+        });
+      } else if (ctx === 'prod-cluster' && ns === 'default') {
+        // Handle the intermediate state when context has changed but namespace hasn't yet
+        await route.fulfill({ json: { data: [] } });
+      } else {
+        await route.fulfill({ 
+          json: { 
+            data: [
+              { name: 'test-pod-1', namespace: 'default', status: 'Running', node: 'node-1' }
+            ] 
+          } 
+        });
+      }
     });
 
     await page.goto('/k8s-dashboard');

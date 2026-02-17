@@ -354,7 +354,12 @@ export async function getModels() {
       const models = await client.listModels();
       return models;
   } catch (error) {
-      console.error("Failed to list models:", error);
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("Not authenticated")) {
+          console.warn("[CopilotService] Not authenticated with GitHub Copilot. Chat features will be disabled until authenticated.");
+      } else {
+          console.error("Failed to list models:", error);
+      }
       return [];
   }
 }
