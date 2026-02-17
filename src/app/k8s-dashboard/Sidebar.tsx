@@ -105,10 +105,11 @@ export default function Sidebar({
 
       <div className="p-4 border-b space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+          <label htmlFor="context-select" className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
             Context
           </label>
           <select
+            id="context-select"
             className="w-full p-2 rounded-md border text-sm bg-white dark:bg-black"
             value={selectedContext}
             onChange={(e) => onSelectContext(e.target.value)}
@@ -127,10 +128,11 @@ export default function Sidebar({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+          <label htmlFor="namespace-select" className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
             Namespace
           </label>
           <select
+            id="namespace-select"
             className="w-full p-2 rounded-md border text-sm bg-white dark:bg-black"
             value={selectedNamespace}
             onChange={(e) => onSelectNamespace(e.target.value)}
