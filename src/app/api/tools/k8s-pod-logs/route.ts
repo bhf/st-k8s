@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const namespace = searchParams.get("namespace") || "default";
+  const context = searchParams.get("context") || undefined;
   const podName = searchParams.get("podName");
   const containerName = searchParams.get("containerName") || undefined;
   const tailLines = searchParams.get("tailLines") ? parseInt(searchParams.get("tailLines")!) : undefined;
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
         writer.abort(err);
       });
 
-      getPodLogStream(namespace, podName, containerName, k8sStream, tailLines, sinceSeconds).catch(err => {
+      getPodLogStream(namespace, podName, containerName, k8sStream, tailLines, sinceSeconds, context ?? undefined).catch(err => {
         console.error("Failed to start log stream:", err);
         writer.abort(err);
       });
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest) {
         },
       });
     } else {
-      const logsResponse = await getPodLogs(namespace, podName, containerName, tailLines, sinceSeconds);
+      const logsResponse = await getPodLogs(namespace, podName, containerName, tailLines, sinceSeconds, context ?? undefined);
       return NextResponse.json({ data: logsResponse });
     }
   } catch (err: unknown) {

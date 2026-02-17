@@ -11,9 +11,10 @@ export async function GET(req: NextRequest) {
   } else {
     namespace = namespace.trim();
   }
+  const context = searchParams.get("context") || undefined;
 
   try {
-    const data = await getRoles(namespace);
+    const data = await getRoles(namespace, context);
     return NextResponse.json(data);
   } catch (err: unknown) {
     console.error("Error fetching roles:", err);

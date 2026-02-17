@@ -27,7 +27,7 @@ describe('API: k8s-statefulsets', () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json).toEqual({ data: mockData })
-    expect(k8s.getStatefulSets).toHaveBeenCalledWith('default')
+    expect(k8s.getStatefulSets).toHaveBeenCalledWith('default', undefined)
   })
 
   it('uses default namespace if not provided', async () => {
@@ -36,7 +36,16 @@ describe('API: k8s-statefulsets', () => {
     const req = new NextRequest('http://localhost:3000/api/tools/k8s-statefulsets')
     await GET(req)
     
-    expect(k8s.getStatefulSets).toHaveBeenCalledWith('default')
+    expect(k8s.getStatefulSets).toHaveBeenCalledWith('default', undefined)
+  })
+
+  it('handles context parameter', async () => {
+    vi.mocked(k8s.getStatefulSets).mockResolvedValue([])
+
+    const req = new NextRequest('http://localhost:3000/api/tools/k8s-statefulsets?namespace=test&context=prod')
+    await GET(req)
+    
+    expect(k8s.getStatefulSets).toHaveBeenCalledWith('test', 'prod')
   })
 
   it('returns 500 on error', async () => {

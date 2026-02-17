@@ -34,7 +34,7 @@ describe('API: k8s-cronjobs', () => {
     // Our mockExisting returns strings (if I used strings in mockData above, but I used `new Date().toISOString()`)
     // mockData above has strings for Dates.
     expect(json).toEqual({ data: mockData })
-    expect(k8s.getCronJobs).toHaveBeenCalledWith('default')
+    expect(k8s.getCronJobs).toHaveBeenCalledWith('default', undefined)
   })
 
   it('uses default namespace if not provided', async () => {
@@ -43,7 +43,7 @@ describe('API: k8s-cronjobs', () => {
     const req = new NextRequest('http://localhost:3000/api/tools/k8s-cronjobs')
     await GET(req)
     
-    expect(k8s.getCronJobs).toHaveBeenCalledWith('default')
+    expect(k8s.getCronJobs).toHaveBeenCalledWith('default', undefined)
   })
 
   it('returns 500 on error', async () => {

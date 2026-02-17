@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
     const {searchParams} = new URL(req.url);
+    const context = searchParams.get("context") || undefined;
     // Robustly extract namespace: use 'default' if missing, empty, or whitespace
     let namespace = searchParams.get("namespace");
     if (!namespace || !namespace.trim()) {
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
     const namespaceClean = namespace && namespace.trim() ? namespace.trim() : "default";
 
     try {
-        const result = await getPods(namespaceClean);
+        const result = await getPods(namespaceClean, context ?? undefined);
         return NextResponse.json({data: result});
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Failed to fetch pod resources";

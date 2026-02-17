@@ -21,7 +21,8 @@ import {
   getServiceAccounts,
   getRoles,
   getRoleBindings,
-  getPodLogs
+  getPodLogs,
+  getContexts
 } from "./lib/k8s"; // Using relative path to ensure resolution without extra alias config if needed
 
 const server = new Server(
@@ -36,11 +37,17 @@ const server = new Server(
   }
 );
 
-// Helper to handle namespace argument
-const getNamespace = (args: unknown) => {
-  const parsed = z.object({ namespace: z.string().optional() }).safeParse(args);
-  if (!parsed.success) return "default";
-  return parsed.data.namespace?.trim() || "default";
+// Helper to handle arguments
+const getK8sArgs = (args: unknown) => {
+  const parsed = z.object({ 
+    namespace: z.string().optional(),
+    context: z.string().optional()
+  }).safeParse(args);
+  
+  return {
+    namespace: parsed.success ? (parsed.data.namespace?.trim() || "default") : "default",
+    context: parsed.success ? (parsed.data.context?.trim() || undefined) : undefined
+  };
 };
 
 // Tool Definitions
@@ -48,11 +55,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
+        name: "list_contexts",
+        description: "List all available Kubernetes contexts from kubeconfig",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
+      {
         name: "list_namespaces",
         description: "List all Kubernetes namespaces",
         inputSchema: {
           type: "object",
-          properties: {},
+          properties: {
+            context: { type: "string", description: "Kubernetes context name (optional)" },
+          },
         },
       },
       {
@@ -62,6 +79,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {
             namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -72,6 +90,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {
             namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -82,6 +101,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {
             namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -92,6 +112,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {
             namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -102,6 +123,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {
             namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -112,6 +134,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {
             namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -122,6 +145,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {
             namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -132,6 +156,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {
             namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -142,6 +167,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {
             namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -152,6 +178,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {
             namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -160,7 +187,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         description: "List Kubernetes nodes",
         inputSchema: {
           type: "object",
-          properties: {},
+          properties: {
+            context: { type: "string", description: "Kubernetes context name (optional)" },
+          },
         },
       },
       {
@@ -173,6 +202,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               description: "Kubernetes namespace (default: default)",
             },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -186,6 +216,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               description: "Kubernetes namespace (default: default)",
             },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -199,6 +230,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               description: "Kubernetes namespace (default: default)",
             },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -212,6 +244,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               description: "Kubernetes namespace (default: default)",
             },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -225,6 +258,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               description: "Kubernetes namespace (default: default)",
             },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -238,6 +272,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               description: "Kubernetes namespace (default: default)",
             },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
         },
       },
@@ -252,6 +287,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             containerName: { type: "string", description: "Name of the container (optional)" },
             tailLines: { type: "number", description: "Number of lines to return from the end of the logs (optional)" },
             sinceSeconds: { type: "number", description: "How many seconds ago to start logs from (optional)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
           },
           required: ["podName"],
         },
@@ -265,143 +301,152 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
 
     switch (name) {
+      case "list_contexts": {
+        const contexts = await getContexts();
+        return {
+          content: [{ type: "text", text: JSON.stringify(contexts, null, 2) }],
+        };
+      }
+
       case "list_namespaces": {
-        const namespaces = await getNamespaces();
+        const { context } = getK8sArgs(args);
+        const namespaces = await getNamespaces(context);
         return {
           content: [{ type: "text", text: JSON.stringify(namespaces, null, 2) }],
         };
       }
 
       case "list_pods": {
-        const namespace = getNamespace(args);
-        const result = await getPods(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const result = await getPods(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
       }
 
       case "list_deployments": {
-        const namespace = getNamespace(args);
-        const items = await getDeployments(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const items = await getDeployments(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(items, null, 2) }],
         };
       }
 
       case "list_services": {
-        const namespace = getNamespace(args);
-        const items = await getServices(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const items = await getServices(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(items, null, 2) }],
         };
       }
 
       case "list_daemonsets": {
-        const namespace = getNamespace(args);
-        const items = await getDaemonSets(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const items = await getDaemonSets(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(items, null, 2) }],
         };
       }
 
       case "list_replicasets": {
-        const namespace = getNamespace(args);
-        const items = await getReplicaSets(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const items = await getReplicaSets(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(items, null, 2) }],
         };
       }
 
       case "list_statefulsets": {
-        const namespace = getNamespace(args);
-        const items = await getStatefulSets(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const items = await getStatefulSets(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(items, null, 2) }],
         };
       }
 
-       case "list_ingresses": {
-        const namespace = getNamespace(args);
-        const items = await getIngresses(namespace);
+      case "list_ingresses": {
+        const { namespace, context } = getK8sArgs(args);
+        const items = await getIngresses(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(items, null, 2) }],
         };
       }
 
       case "list_endpoints": {
-        const namespace = getNamespace(args);
-        const items = await getEndpoints(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const items = await getEndpoints(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(items, null, 2) }],
         };
       }
 
       case "list_events": {
-        const namespace = getNamespace(args);
-        const items = await getEvents(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const items = await getEvents(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(items, null, 2) }],
         };
       }
 
       case "list_pvcs": {
-        const namespace = getNamespace(args);
-        const pvcs = await getPVCs(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const pvcs = await getPVCs(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(pvcs, null, 2) }],
         };
       }
 
       case "list_nodes": {
-        const nodes = await getNodes();
+        const { context } = getK8sArgs(args);
+        const nodes = await getNodes(context);
         return {
           content: [{ type: "text", text: JSON.stringify(nodes, null, 2) }],
         };
       }
 
       case "list_configmaps": {
-        const namespace = getNamespace(args);
-        const configMaps = await getConfigMaps(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const configMaps = await getConfigMaps(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(configMaps, null, 2) }],
         };
       }
 
       case "list_jobs": {
-        const namespace = getNamespace(args);
-        const data = await getJobs(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const data = await getJobs(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
         };
       }
 
       case "list_cronjobs": {
-        const namespace = getNamespace(args);
-        const data = await getCronJobs(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const data = await getCronJobs(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
         };
       }
 
       case "list_serviceaccounts": {
-        const namespace = getNamespace(args);
-        const serviceAccounts = await getServiceAccounts(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const serviceAccounts = await getServiceAccounts(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(serviceAccounts, null, 2) }],
         };
       }
 
       case "list_roles": {
-        const namespace = getNamespace(args);
-        const roles = await getRoles(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const roles = await getRoles(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(roles, null, 2) }],
         };
       }
 
       case "list_rolebindings": {
-        const namespace = getNamespace(args);
-        const roleBindings = await getRoleBindings(namespace);
+        const { namespace, context } = getK8sArgs(args);
+        const roleBindings = await getRoleBindings(namespace, context);
         return {
           content: [{ type: "text", text: JSON.stringify(roleBindings, null, 2) }],
         };
@@ -414,14 +459,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           containerName: z.string().optional(),
           tailLines: z.number().optional(),
           sinceSeconds: z.number().optional(),
+          context: z.string().optional(),
         }).safeParse(args);
 
         if (!parsed.success) {
           throw new Error("Invalid arguments for get_pod_logs");
         }
 
-        const { namespace, podName, containerName, tailLines, sinceSeconds } = parsed.data;
-        const logs = await getPodLogs(namespace || "default", podName, containerName, tailLines, sinceSeconds);
+        const { namespace, podName, containerName, tailLines, sinceSeconds, context } = parsed.data;
+        const logs = await getPodLogs(namespace || "default", podName, containerName, tailLines, sinceSeconds, context);
         return {
           content: [{ type: "text", text: logs }],
         };

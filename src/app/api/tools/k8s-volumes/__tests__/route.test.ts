@@ -30,7 +30,7 @@ describe('API: k8s-volumes', () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json).toEqual({ data: mockData })
-    expect(k8s.getPVCs).toHaveBeenCalledWith('default')
+    expect(k8s.getPVCs).toHaveBeenCalledWith('default', undefined)
   })
 
   it('uses default namespace if not provided', async () => {
@@ -39,7 +39,16 @@ describe('API: k8s-volumes', () => {
     const req = new NextRequest('http://localhost:3000/api/tools/k8s-volumes')
     await GET(req)
     
-    expect(k8s.getPVCs).toHaveBeenCalledWith('default')
+    expect(k8s.getPVCs).toHaveBeenCalledWith('default', undefined)
+  })
+
+  it('handles context parameter', async () => {
+    vi.mocked(k8s.getPVCs).mockResolvedValue([])
+
+    const req = new NextRequest('http://localhost:3000/api/tools/k8s-volumes?namespace=test&context=prod')
+    await GET(req)
+    
+    expect(k8s.getPVCs).toHaveBeenCalledWith('test', 'prod')
   })
 
   it('returns 500 on error', async () => {

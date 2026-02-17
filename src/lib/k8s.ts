@@ -28,39 +28,62 @@ import { Writable } from "node:stream";
 
 // Refactor to lazy-load clients to avoid top-level side effects (like connecting to cluster)
 // during build time import.
-let k8sCoreApi: CoreV1Api | undefined;
-let k8sAppsApi: AppsV1Api | undefined;
-let k8sBatchApi: BatchV1Api | undefined;
-let k8sNetworkingApi: NetworkingV1Api | undefined;
-let k8sRbacApi: RbacAuthorizationV1Api | undefined;
+type K8sClients = {
+  core: CoreV1Api;
+  apps: AppsV1Api;
+  batch: BatchV1Api;
+  networking: NetworkingV1Api;
+  rbac: RbacAuthorizationV1Api;
+  config: KubeConfig;
+};
 
-function getClients() {
-  if (!k8sCoreApi) {
-    const kc = new KubeConfig();
-    kc.loadFromDefault();
-    k8sCoreApi = kc.makeApiClient(CoreV1Api);
-    k8sAppsApi = kc.makeApiClient(AppsV1Api);
-    k8sBatchApi = kc.makeApiClient(BatchV1Api);
-    k8sNetworkingApi = kc.makeApiClient(NetworkingV1Api);
-    k8sRbacApi = kc.makeApiClient(RbacAuthorizationV1Api);
+const clientsCache = new Map<string, K8sClients>();
+
+function getClients(context?: string): K8sClients {
+  const cacheKey = context || 'default';
+  if (clientsCache.has(cacheKey)) {
+    return clientsCache.get(cacheKey)!;
   }
-  return {
-    core: k8sCoreApi!,
-    apps: k8sAppsApi!,
-    batch: k8sBatchApi!,
-    networking: k8sNetworkingApi!,
-    rbac: k8sRbacApi!,
+
+  const kc = new KubeConfig();
+  kc.loadFromDefault();
+  if (context && context !== 'default') {
+    kc.setCurrentContext(context);
+  }
+
+  const clients: K8sClients = {
+    core: kc.makeApiClient(CoreV1Api),
+    apps: kc.makeApiClient(AppsV1Api),
+    batch: kc.makeApiClient(BatchV1Api),
+    networking: kc.makeApiClient(NetworkingV1Api),
+    rbac: kc.makeApiClient(RbacAuthorizationV1Api),
+    config: kc,
   };
+
+  clientsCache.set(cacheKey, clients);
+  return clients;
 }
 
-export async function getNamespaces() {
-  const { core } = getClients();
+export function getContexts() {
+  const kc = new KubeConfig();
+  kc.loadFromDefault();
+  const currentContext = kc.getCurrentContext();
+  return kc.getContexts().map(ctx => ({
+    name: ctx.name,
+    cluster: ctx.cluster,
+    user: ctx.user,
+    isCurrent: ctx.name === currentContext
+  }));
+}
+
+export async function getNamespaces(context?: string) {
+  const { core } = getClients(context);
   const nsResp = await core.listNamespace();
   return (nsResp.items || []).map(ns => ns.metadata?.name || "");
 }
 
-export async function getPods(namespace: string) {
-  const { core } = getClients();
+export async function getPods(namespace: string, context?: string) {
+  const { core } = getClients(context);
   const podsResp = await core.listNamespacedPod({ namespace });
   return podsResp.items.flatMap((pod: V1Pod) =>
     (pod.spec?.containers || []).map((container) => {
@@ -78,8 +101,8 @@ export async function getPods(namespace: string) {
   );
 }
 
-export async function getDeployments(namespace: string) {
-  const { apps } = getClients();
+export async function getDeployments(namespace: string, context?: string) {
+  const { apps } = getClients(context);
   const resp = await apps.listNamespacedDeployment({ namespace });
   return resp.items.map((item: V1Deployment) => ({
     name: item.metadata?.name,
@@ -91,8 +114,8 @@ export async function getDeployments(namespace: string) {
   }));
 }
 
-export async function getServices(namespace: string) {
-  const { core } = getClients();
+export async function getServices(namespace: string, context?: string) {
+  const { core } = getClients(context);
   const resp = await core.listNamespacedService({ namespace });
   return resp.items.map((item: V1Service) => ({
     name: item.metadata?.name,
@@ -104,8 +127,8 @@ export async function getServices(namespace: string) {
   }));
 }
 
-export async function getDaemonSets(namespace: string) {
-  const { apps } = getClients();
+export async function getDaemonSets(namespace: string, context?: string) {
+  const { apps } = getClients(context);
   const resp = await apps.listNamespacedDaemonSet({ namespace });
   return resp.items.map((item: V1DaemonSet) => ({
     name: item.metadata?.name,
@@ -117,8 +140,8 @@ export async function getDaemonSets(namespace: string) {
   }));
 }
 
-export async function getReplicaSets(namespace: string) {
-  const { apps } = getClients();
+export async function getReplicaSets(namespace: string, context?: string) {
+  const { apps } = getClients(context);
   const resp = await apps.listNamespacedReplicaSet({ namespace });
   return resp.items.map((item: V1ReplicaSet) => ({
     name: item.metadata?.name,
@@ -129,8 +152,8 @@ export async function getReplicaSets(namespace: string) {
   }));
 }
 
-export async function getStatefulSets(namespace: string) {
-  const { apps } = getClients();
+export async function getStatefulSets(namespace: string, context?: string) {
+  const { apps } = getClients(context);
   const resp = await apps.listNamespacedStatefulSet({ namespace });
   return resp.items.map((item: V1StatefulSet) => ({
     name: item.metadata?.name,
@@ -140,8 +163,8 @@ export async function getStatefulSets(namespace: string) {
   }));
 }
 
-export async function getIngresses(namespace: string) {
-  const { networking } = getClients();
+export async function getIngresses(namespace: string, context?: string) {
+  const { networking } = getClients(context);
   const resp = await networking.listNamespacedIngress({ namespace });
   return resp.items.map((item: V1Ingress) => ({
     name: item.metadata?.name,
@@ -151,8 +174,8 @@ export async function getIngresses(namespace: string) {
   }));
 }
 
-export async function getEndpoints(namespace: string) {
-  const { core } = getClients();
+export async function getEndpoints(namespace: string, context?: string) {
+  const { core } = getClients(context);
   const resp = await core.listNamespacedEndpoints({ namespace });
   return resp.items.map((item: V1Endpoints) => ({
     name: item.metadata?.name,
@@ -161,8 +184,8 @@ export async function getEndpoints(namespace: string) {
   }));
 }
 
-export async function getEvents(namespace: string) {
-  const { core } = getClients();
+export async function getEvents(namespace: string, context?: string) {
+  const { core } = getClients(context);
   const resp = await core.listNamespacedEvent({ namespace });
   return resp.items.map((item: CoreV1Event) => ({
     name: item.metadata?.name,
@@ -181,8 +204,8 @@ export async function getEvents(namespace: string) {
   }));
 }
 
-export async function getPVCs(namespace: string) {
-  const { core } = getClients();
+export async function getPVCs(namespace: string, context?: string) {
+  const { core } = getClients(context);
   const pvcResp = await core.listNamespacedPersistentVolumeClaim({ namespace });
   return pvcResp.items.map((pvc: V1PersistentVolumeClaim) => ({
     name: pvc.metadata?.name,
@@ -195,8 +218,8 @@ export async function getPVCs(namespace: string) {
   }));
 }
 
-export async function getNodes() {
-  const { core } = getClients();
+export async function getNodes(context?: string) {
+  const { core } = getClients(context);
   const resp = await core.listNode();
   return resp.items.map((node: V1Node) => {
     const readyCondition = node.status?.conditions?.find(c => c.type === 'Ready');
@@ -222,8 +245,8 @@ export async function getNodes() {
   });
 }
 
-export async function getConfigMaps(namespace: string) {
-  const { core } = getClients();
+export async function getConfigMaps(namespace: string, context?: string) {
+  const { core } = getClients(context);
   const resp = await core.listNamespacedConfigMap({ namespace });
   return resp.items.map((item: V1ConfigMap) => ({
     name: item.metadata?.name,
@@ -234,8 +257,8 @@ export async function getConfigMaps(namespace: string) {
   }));
 }
 
-export async function getJobs(namespace: string) {
-  const { batch } = getClients();
+export async function getJobs(namespace: string, context?: string) {
+  const { batch } = getClients(context);
   const resp = await batch.listNamespacedJob({ namespace });
   return resp.items.map((item: V1Job) => ({
     name: item.metadata?.name,
@@ -250,8 +273,8 @@ export async function getJobs(namespace: string) {
   }));
 }
 
-export async function getCronJobs(namespace: string) {
-  const { batch } = getClients();
+export async function getCronJobs(namespace: string, context?: string) {
+  const { batch } = getClients(context);
   const resp = await batch.listNamespacedCronJob({ namespace });
   return resp.items.map((item: V1CronJob) => ({
     name: item.metadata?.name,
@@ -263,8 +286,8 @@ export async function getCronJobs(namespace: string) {
   }));
 }
 
-export async function getServiceAccounts(namespace: string) {
-  const { core } = getClients();
+export async function getServiceAccounts(namespace: string, context?: string) {
+  const { core } = getClients(context);
   const resp = await core.listNamespacedServiceAccount({ namespace });
   return resp.items.map((item: V1ServiceAccount) => ({
     name: item.metadata?.name,
@@ -273,8 +296,8 @@ export async function getServiceAccounts(namespace: string) {
   }));
 }
 
-export async function getRoles(namespace: string) {
-  const { rbac } = getClients();
+export async function getRoles(namespace: string, context?: string) {
+  const { rbac } = getClients(context);
   const resp = await rbac.listNamespacedRole({ namespace });
   return resp.items.map((item: V1Role) => ({
     name: item.metadata?.name,
@@ -283,8 +306,8 @@ export async function getRoles(namespace: string) {
   }));
 }
 
-export async function getRoleBindings(namespace: string) {
-  const { rbac } = getClients();
+export async function getRoleBindings(namespace: string, context?: string) {
+  const { rbac } = getClients(context);
   const resp = await rbac.listNamespacedRoleBinding({ namespace });
   return resp.items.map((item: V1RoleBinding) => ({
     name: item.metadata?.name,
@@ -294,8 +317,8 @@ export async function getRoleBindings(namespace: string) {
   }));
 }
 
-export async function getPodLogs(namespace: string, podName: string, containerName?: string, tailLines?: number, sinceSeconds?: number) {
-  const { core } = getClients();
+export async function getPodLogs(namespace: string, podName: string, containerName?: string, tailLines?: number, sinceSeconds?: number, context?: string) {
+  const { core } = getClients(context);
   // Using the core API to get logs as a string
   const res = await core.readNamespacedPodLog({
     name: podName,
@@ -307,10 +330,9 @@ export async function getPodLogs(namespace: string, podName: string, containerNa
   return res;
 }
 
-export async function getPodLogStream(namespace: string, podName: string, containerName: string, stream: Writable, tailLines?: number, sinceSeconds?: number) {
-  const kc = new KubeConfig();
-  kc.loadFromDefault();
-  const log = new Log(kc);
+export async function getPodLogStream(namespace: string, podName: string, containerName: string, stream: Writable, tailLines?: number, sinceSeconds?: number, context?: string) {
+  const { config } = getClients(context);
+  const log = new Log(config);
   
   return log.log(namespace, podName, containerName, stream, { 
     follow: true, 

@@ -22,10 +22,11 @@ import {
 
 interface DashboardContentProps {
   namespace: string;
+  context?: string;
   tool: ToolType;
 }
 
-export default function DashboardContent({ namespace, tool }: DashboardContentProps) {
+export default function DashboardContent({ namespace, context, tool }: DashboardContentProps) {
   const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,8 +85,9 @@ export default function DashboardContent({ namespace, tool }: DashboardContentPr
   };
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchData() {
-      if (!namespace) return;
+      if (!namespace && tool !== "nodes") return;
 
       setLoading(true);
       setError(null);
@@ -113,13 +115,23 @@ export default function DashboardContent({ namespace, tool }: DashboardContentPr
         };
 
         const endpoint = endpointMap[tool];
-        const res = await fetch(`/api/tools/${endpoint}?namespace=${namespace}`);
+        const url = new URL(`/api/tools/${endpoint}`, window.location.origin);
+        if (namespace) {
+          url.searchParams.set("namespace", namespace);
+        }
+        if (context) {
+          url.searchParams.set("context", context);
+        }
+
+        const res = await fetch(url.toString());
 
         if (!res.ok) {
           throw new Error(`Failed to fetch ${tool}: ${res.statusText}`);
         }
 
         const json = await res.json();
+
+        if (!isMounted) return;
 
         // Handle different response structures
         if (json.data) {
@@ -140,15 +152,21 @@ export default function DashboardContent({ namespace, tool }: DashboardContentPr
           }
         }
       } catch (err: unknown) {
+        if (!isMounted) return;
         const message = err instanceof Error ? err.message : "An unknown error occurred";
         setError(message);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
     fetchData();
-  }, [namespace, tool]);
+    return () => {
+      isMounted = false;
+    };
+  }, [namespace, context, tool]);
 
   return (
     <div className="p-6 h-full overflow-y-auto">
@@ -363,11 +381,6 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           </TableBody>
         </Table>
       </div>
-      <style jsx global>{`
-        th:hover .cursor-col-resize {
-            opacity: 1;
-        }
-      `}</style>
       <style jsx global>{`
         th:hover .cursor-col-resize {
             opacity: 1;

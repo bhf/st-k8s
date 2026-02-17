@@ -26,7 +26,7 @@ describe('API: k8s-endpoints', () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json).toEqual({ data: mockData })
-    expect(k8s.getEndpoints).toHaveBeenCalledWith('default')
+    expect(k8s.getEndpoints).toHaveBeenCalledWith('default', undefined)
   })
 
   it('uses default namespace if not provided', async () => {
@@ -35,7 +35,7 @@ describe('API: k8s-endpoints', () => {
     const req = new NextRequest('http://localhost:3000/api/tools/k8s-endpoints')
     await GET(req)
     
-    expect(k8s.getEndpoints).toHaveBeenCalledWith('default')
+    expect(k8s.getEndpoints).toHaveBeenCalledWith('default', undefined)
   })
 
   it('returns 500 on error', async () => {

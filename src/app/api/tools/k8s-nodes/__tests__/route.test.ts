@@ -22,20 +22,19 @@ describe('API: k8s-nodes', () => {
     vi.mocked(k8s.getNodes).mockResolvedValue(mockData as any)
 
     const req = new NextRequest('http://localhost:3000/api/tools/k8s-nodes')
-    // GET for nodes doesn't need params
-    const res = await GET()
+    const res = await GET(req)
     
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json).toEqual({ data: mockData })
-    expect(k8s.getNodes).toHaveBeenCalled()
+    expect(k8s.getNodes).toHaveBeenCalledWith(undefined)
   })
 
   it('returns 500 on error', async () => {
     vi.mocked(k8s.getNodes).mockRejectedValue(new Error('K8s error'))
 
     const req = new NextRequest('http://localhost:3000/api/tools/k8s-nodes')
-    const res = await GET()
+    const res = await GET(req)
     
     expect(res.status).toBe(500)
     const json = await res.json()

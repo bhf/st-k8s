@@ -28,7 +28,7 @@ describe('API: k8s-configmaps', () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json).toEqual({ data: mockData })
-    expect(k8s.getConfigMaps).toHaveBeenCalledWith('default')
+    expect(k8s.getConfigMaps).toHaveBeenCalledWith('default', undefined)
   })
 
   it('uses default namespace if not provided', async () => {
@@ -37,7 +37,7 @@ describe('API: k8s-configmaps', () => {
     const req = new NextRequest('http://localhost:3000/api/tools/k8s-configmaps')
     await GET(req)
     
-    expect(k8s.getConfigMaps).toHaveBeenCalledWith('default')
+    expect(k8s.getConfigMaps).toHaveBeenCalledWith('default', undefined)
   })
 
   it('returns 500 on error', async () => {
