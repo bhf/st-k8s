@@ -21,7 +21,7 @@ jobs:
       run: npm ci
     - name: Get Playwright version
       id: playwright-version
-      run: echo "VPW=$(npm list @playwright/test | grep @playwright/test | awk -F@ '{print $NF}')" >> $GITHUB_ENV
+      run: echo "VPW=$(npx playwright --version | awk '{print $2}')" >> $GITHUB_ENV
     - name: Cache Playwright browsers
       uses: actions/cache@v4
       id: playwright-cache
