@@ -51,6 +51,12 @@ vi.mock('@kubernetes/client-node', async (importOriginal) => {
         if (cls === actual.RbacAuthorizationV1Api) return mocks.rbacApi
         return {}
       }
+      getContexts = vi.fn().mockReturnValue([
+        { name: 'default', cluster: 'cluster-1', user: 'user-1' },
+        { name: 'prod', cluster: 'cluster-2', user: 'user-2' }
+      ])
+      getCurrentContext = vi.fn().mockReturnValue('default')
+      setCurrentContext = vi.fn()
     },
   }
 })
@@ -60,7 +66,7 @@ import {
   getNamespaces, getPods, getDeployments, getNodes, getConfigMaps,
   getServices, getDaemonSets, getReplicaSets, getStatefulSets, getIngresses,
   getEndpoints, getEvents, getPVCs, getCronJobs, getServiceAccounts,
-  getRoles, getRoleBindings
+  getRoles, getRoleBindings, getContexts
 } from '../k8s'
 
 describe('k8s library', () => {
@@ -86,6 +92,19 @@ describe('k8s library', () => {
     
     mocks.rbacApi.listNamespacedRole.mockResolvedValue({ items: [] })
     mocks.rbacApi.listNamespacedRoleBinding.mockResolvedValue({ items: [] })
+  })
+
+  describe('getContexts', () => {
+    it('returns formatted context data', () => {
+      const results = getContexts()
+      expect(results).toHaveLength(2)
+      expect(results[0]).toEqual({
+        name: 'default',
+        cluster: 'cluster-1',
+        user: 'user-1',
+        isCurrent: true
+      })
+    })
   })
 
   describe('getNamespaces', () => {

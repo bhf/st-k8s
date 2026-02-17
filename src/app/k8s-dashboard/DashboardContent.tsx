@@ -22,10 +22,11 @@ import {
 
 interface DashboardContentProps {
   namespace: string;
+  context?: string;
   tool: ToolType;
 }
 
-export default function DashboardContent({ namespace, tool }: DashboardContentProps) {
+export default function DashboardContent({ namespace, context, tool }: DashboardContentProps) {
   const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +86,7 @@ export default function DashboardContent({ namespace, tool }: DashboardContentPr
 
   useEffect(() => {
     async function fetchData() {
-      if (!namespace) return;
+      if (!namespace && tool !== "nodes") return;
 
       setLoading(true);
       setError(null);
@@ -113,7 +114,15 @@ export default function DashboardContent({ namespace, tool }: DashboardContentPr
         };
 
         const endpoint = endpointMap[tool];
-        const res = await fetch(`/api/tools/${endpoint}?namespace=${namespace}`);
+        const url = new URL(`/api/tools/${endpoint}`, window.location.origin);
+        if (namespace) {
+          url.searchParams.set("namespace", namespace);
+        }
+        if (context) {
+          url.searchParams.set("context", context);
+        }
+
+        const res = await fetch(url.toString());
 
         if (!res.ok) {
           throw new Error(`Failed to fetch ${tool}: ${res.statusText}`);
@@ -148,7 +157,7 @@ export default function DashboardContent({ namespace, tool }: DashboardContentPr
     }
 
     fetchData();
-  }, [namespace, tool]);
+  }, [namespace, context, tool]);
 
   return (
     <div className="p-6 h-full overflow-y-auto">

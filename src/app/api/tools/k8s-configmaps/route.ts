@@ -11,9 +11,10 @@ export async function GET(req: NextRequest) {
   } else {
     namespace = namespace.trim();
   }
+  const context = searchParams.get("context") || undefined;
 
   try {
-    const items = await getConfigMaps(namespace);
+    const items = await getConfigMaps(namespace, context);
     return NextResponse.json({ data: items });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to fetch ConfigMaps";

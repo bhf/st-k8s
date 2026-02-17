@@ -13,6 +13,16 @@
 		"github": {
 			"type": "http",
 			"url": "https://api.githubcopilot.com/mcp/"
+		},
+		"k8s-tools": {
+			"command": "npm",
+			"args": [
+				"run",
+				"mcp"
+			],
+			"cwd": "/home/optimus/Workspaces/k8sui/k8s-ui/",
+			"disabled": false,
+			"autoApprove": []
 		}
 	},
 	"inputs": []
