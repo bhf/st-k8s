@@ -29,7 +29,7 @@ describe('API: k8s-services', () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json).toEqual({ data: mockData })
-    expect(k8s.getServices).toHaveBeenCalledWith('default')
+    expect(k8s.getServices).toHaveBeenCalledWith('default', undefined)
   })
 
   it('uses default namespace if not provided', async () => {
@@ -38,7 +38,16 @@ describe('API: k8s-services', () => {
     const req = new NextRequest('http://localhost:3000/api/tools/k8s-services')
     await GET(req)
     
-    expect(k8s.getServices).toHaveBeenCalledWith('default')
+    expect(k8s.getServices).toHaveBeenCalledWith('default', undefined)
+  })
+
+  it('handles context parameter', async () => {
+    vi.mocked(k8s.getServices).mockResolvedValue([])
+
+    const req = new NextRequest('http://localhost:3000/api/tools/k8s-services?namespace=test&context=prod')
+    await GET(req)
+    
+    expect(k8s.getServices).toHaveBeenCalledWith('test', 'prod')
   })
 
   it('returns 500 on error', async () => {

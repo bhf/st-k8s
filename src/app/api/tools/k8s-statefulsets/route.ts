@@ -5,15 +5,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  let namespace = searchParams.get("namespace");
-  if (!namespace || !namespace.trim()) {
-    namespace = "default";
-  } else {
-    namespace = namespace.trim();
-  }
+  const namespace = searchParams.get("namespace")?.trim() || "default";
+  const context = searchParams.get("context") || undefined;
 
   try {
-    const items = await getStatefulSets(namespace);
+    const items = await getStatefulSets(namespace, context);
     return NextResponse.json({ data: items });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to fetch StatefulSets";

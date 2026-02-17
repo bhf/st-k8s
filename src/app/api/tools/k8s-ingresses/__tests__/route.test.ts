@@ -27,7 +27,7 @@ describe('API: k8s-ingresses', () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json).toEqual({ data: mockData })
-    expect(k8s.getIngresses).toHaveBeenCalledWith('default')
+    expect(k8s.getIngresses).toHaveBeenCalledWith('default', undefined)
   })
 
   it('uses default namespace if not provided', async () => {
@@ -36,7 +36,7 @@ describe('API: k8s-ingresses', () => {
     const req = new NextRequest('http://localhost:3000/api/tools/k8s-ingresses')
     await GET(req)
     
-    expect(k8s.getIngresses).toHaveBeenCalledWith('default')
+    expect(k8s.getIngresses).toHaveBeenCalledWith('default', undefined)
   })
 
   it('returns 500 on error', async () => {
