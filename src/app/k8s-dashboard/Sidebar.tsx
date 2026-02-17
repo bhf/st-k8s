@@ -139,7 +139,7 @@ export default function Sidebar({
             disabled={isLoadingNamespaces}
           >
             {isLoadingNamespaces ? (
-              <option>Loading namespaces...</option>
+              <option value={selectedNamespace}>Loading namespaces...</option>
             ) : (
               namespaces.map(ns => (
                 <option key={ns} value={ns}>{ns}</option>
