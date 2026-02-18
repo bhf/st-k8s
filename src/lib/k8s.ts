@@ -23,8 +23,10 @@ import {
   V1Role,
   V1RoleBinding,
   Log,
+  PortForward,
 } from "@kubernetes/client-node";
 import { Writable } from "node:stream";
+import net from "node:net";
 
 // Refactor to lazy-load clients to avoid top-level side effects (like connecting to cluster)
 // during build time import.
@@ -325,6 +327,21 @@ export async function getRoleBindings(namespace: string, context?: string) {
   }));
 }
 
+export async function findPodForService(namespace: string, serviceName: string, context?: string) {
+  const { core } = getClients(context);
+  const svc = await core.readNamespacedService({ name: serviceName, namespace });
+  const selector = svc.spec?.selector;
+  
+  if (!selector) return null;
+  
+  const labelSelector = Object.entries(selector)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(',');
+    
+  const pods = await core.listNamespacedPod({ namespace, labelSelector });
+  return pods.items[0]?.metadata?.name || null;
+}
+
 export async function getPodLogs(namespace: string, podName: string, containerName?: string, tailLines?: number, sinceSeconds?: number, context?: string) {
   const { core } = getClients(context);
   // Using the core API to get logs as a string
@@ -349,4 +366,69 @@ export async function getPodLogStream(namespace: string, podName: string, contai
     pretty: false,
     timestamps: true
   });
+}
+
+export interface ActiveForward {
+  id: string;
+  namespace: string;
+  podName: string;
+  containerPort: number;
+  localPort: number;
+  localAddress: string;
+  created: Date;
+}
+
+const activeForwards = new Map<string, { info: ActiveForward; stop: () => void }>();
+
+export async function startPortForward(namespace: string, podName: string, containerPort: number, localPort?: number, localAddress: string = '127.0.0.1', context?: string): Promise<ActiveForward> {
+  const { config } = getClients(context);
+  const pf = new PortForward(config);
+  
+  const server = net.createServer((socket) => {
+    pf.portForward(namespace, podName, [containerPort], socket, null, socket);
+  });
+
+  return new Promise((resolve, reject) => {
+    server.listen(localPort || 0, localAddress, () => {
+      const address = server.address() as net.AddressInfo;
+      const id = `${namespace}-${podName}-${containerPort}-${address.port}`;
+      
+      const info: ActiveForward = {
+        id,
+        namespace,
+        podName,
+        containerPort,
+        localPort: address.port,
+        localAddress: address.address,
+        created: new Date()
+      };
+      
+      activeForwards.set(id, { 
+        info, 
+        stop: () => {
+          server.close();
+          activeForwards.delete(id);
+        }
+      });
+      resolve(info);
+    });
+    
+    server.on('error', (err) => {
+      console.error('Port forward server error:', err);
+      reject(err);
+    });
+  });
+}
+
+export async function stopPortForward(id: string) {
+  const forward = activeForwards.get(id);
+  if (forward) {
+    forward.stop();
+    return true;
+  }
+  return false;
+}
+
+export function listPortForwards(): ActiveForward[] {
+  return Array.from(activeForwards.values()).map(f => f.info);
 }
