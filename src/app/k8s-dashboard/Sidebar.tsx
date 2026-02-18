@@ -19,7 +19,8 @@ import {
   Zap
 } from "lucide-react";
 import Image from "next/image";
-import {ModeToggle} from "@/components/ui/mode-toggle";
+import { ModeToggle } from "@/components/ui/mode-toggle";
+import { useState, useEffect } from "react";
 
 export type ToolType =
   | "pod-resources"
@@ -39,7 +40,8 @@ export type ToolType =
   | "serviceaccounts"
   | "roles"
   | "rolebindings"
-  | "port-forwards";
+  | "port-forwards"
+  | "metrics";
 
 interface SidebarProps {
   selectedTool: ToolType;
@@ -65,12 +67,27 @@ const TOOLS: { id: ToolType; label: string; icon: React.ReactNode }[] = [
   { id: "roles", label: "Roles", icon: <Lock className="w-4 h-4" /> },
   { id: "rolebindings", label: "RoleBindings", icon: <Lock className="w-4 h-4" /> },
   { id: "port-forwards", label: "Port Forwards", icon: <Zap className="w-4 h-4" /> },
+  { id: "metrics", label: "Metrics", icon: <Activity className="w-4 h-4" /> },
 ];
 
 export default function Sidebar({
   selectedTool,
   onSelectTool,
 }: SidebarProps) {
+  const [metricsAvailable, setMetricsAvailable] = useState<boolean>(true);
+
+  useEffect(() => {
+    fetch('/api/tools/k8s-metrics-status')
+      .then(res => res.json())
+      .then(data => setMetricsAvailable(data.available))
+      .catch(() => setMetricsAvailable(false));
+  }, []);
+
+  const visibleTools = TOOLS.filter(tool => {
+    if (tool.id === "metrics") return metricsAvailable;
+    return true;
+  });
+
   return (
     <aside className="hidden md:flex md:w-64 bg-zinc-50 dark:bg-zinc-900 border-r flex-col h-full">
       <div className="p-4 border-b flex items-center bg-black justify-between gap-3">
@@ -92,7 +109,7 @@ export default function Sidebar({
 
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-1">
-          {TOOLS.map((tool) => (
+          {visibleTools.map((tool) => (
             <Button
               key={tool.id}
               variant={selectedTool === tool.id ? "secondary" : "ghost"}

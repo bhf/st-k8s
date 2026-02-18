@@ -26,7 +26,9 @@ import {
   startPortForward,
   stopPortForward,
   listPortForwards,
-  findPodForService
+  findPodForService,
+  getNodeMetrics,
+  getPodMetrics
 } from "./lib/k8s"; // Using relative path to ensure resolution without extra alias config if needed
 
 const server = new Server(
@@ -43,11 +45,11 @@ const server = new Server(
 
 // Helper to handle arguments
 const getK8sArgs = (args: unknown) => {
-  const parsed = z.object({ 
+  const parsed = z.object({
     namespace: z.string().optional(),
     context: z.string().optional()
   }).safeParse(args);
-  
+
   return {
     namespace: parsed.success ? (parsed.data.namespace?.trim() || "default") : "default",
     context: parsed.success ? (parsed.data.context?.trim() || undefined) : undefined
@@ -332,6 +334,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
         },
       },
+      {
+        name: "get_node_metrics",
+        description: "Get resource usage metrics for cluster nodes (CPU/Memory)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            context: { type: "string", description: "Kubernetes context name (optional)" },
+          },
+        },
+      },
+      {
+        name: "get_pod_metrics",
+        description: "Get resource usage metrics for pods in a namespace",
+        inputSchema: {
+          type: "object",
+          properties: {
+            namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
+          },
+        },
+      },
     ],
   };
 });
@@ -536,7 +559,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             throw new Error(`No pods found for service ${serviceName}`);
           }
         }
-        
+
         if (!targetPod) {
           throw new Error("Either podName or serviceName must be provided");
         }
@@ -567,6 +590,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const forwards = listPortForwards();
         return {
           content: [{ type: "text", text: JSON.stringify(forwards, null, 2) }],
+        };
+      }
+
+      case "get_node_metrics": {
+        const { context } = getK8sArgs(args);
+        const metrics = await getNodeMetrics(context);
+        return {
+          content: [{ type: "text", text: JSON.stringify(metrics, null, 2) }],
+        };
+      }
+
+      case "get_pod_metrics": {
+        const { namespace, context } = getK8sArgs(args);
+        const metrics = await getPodMetrics(namespace, context);
+        return {
+          content: [{ type: "text", text: JSON.stringify(metrics, null, 2) }],
         };
       }
 

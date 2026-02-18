@@ -31,6 +31,10 @@ const mocks = vi.hoisted(() => {
     rbacApi: {
       listNamespacedRole: vi.fn(),
       listNamespacedRoleBinding: vi.fn(),
+    },
+    customApi: {
+      listClusterCustomObject: vi.fn(),
+      listNamespacedCustomObject: vi.fn(),
     }
   }
 })
@@ -38,7 +42,7 @@ const mocks = vi.hoisted(() => {
 // Mock the kubernetes client
 vi.mock('@kubernetes/client-node', async (importOriginal) => {
   const actual = await importOriginal<typeof k8sClient>()
-  
+
   return {
     ...actual,
     KubeConfig: class {
@@ -49,6 +53,7 @@ vi.mock('@kubernetes/client-node', async (importOriginal) => {
         if (cls === actual.NetworkingV1Api) return mocks.networkingApi
         if (cls === actual.BatchV1Api) return mocks.batchApi
         if (cls === actual.RbacAuthorizationV1Api) return mocks.rbacApi
+        if (cls === actual.CustomObjectsApi) return mocks.customApi
         return {}
       }
       getContexts = vi.fn().mockReturnValue([
@@ -62,17 +67,17 @@ vi.mock('@kubernetes/client-node', async (importOriginal) => {
 })
 
 // Import the module under test
-import { 
+import {
   getNamespaces, getPods, getDeployments, getNodes, getConfigMaps,
   getServices, getDaemonSets, getReplicaSets, getStatefulSets, getIngresses,
   getEndpoints, getEvents, getPVCs, getCronJobs, getServiceAccounts,
-  getRoles, getRoleBindings, getContexts
+  getRoles, getRoleBindings, getContexts, getNodeMetrics, getPodMetrics, resetMetricsApiAvailable
 } from '../k8s'
 
 describe('k8s library', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     // Set default successful responses to avoid crashes
     mocks.coreApi.listNamespace.mockResolvedValue({ items: [] })
     mocks.coreApi.listNamespacedPod.mockResolvedValue({ items: [] })
@@ -81,17 +86,21 @@ describe('k8s library', () => {
     mocks.coreApi.listNamespacedEvent.mockResolvedValue({ items: [] })
     mocks.coreApi.listNamespacedPersistentVolumeClaim.mockResolvedValue({ items: [] })
     mocks.coreApi.listNamespacedServiceAccount.mockResolvedValue({ items: [] })
-    
+
     mocks.appsApi.listNamespacedDeployment.mockResolvedValue({ items: [] })
     mocks.appsApi.listNamespacedDaemonSet.mockResolvedValue({ items: [] })
     mocks.appsApi.listNamespacedReplicaSet.mockResolvedValue({ items: [] })
     mocks.appsApi.listNamespacedStatefulSet.mockResolvedValue({ items: [] })
-    
+
     mocks.networkingApi.listNamespacedIngress.mockResolvedValue({ items: [] })
     mocks.batchApi.listNamespacedCronJob.mockResolvedValue({ items: [] })
-    
+
     mocks.rbacApi.listNamespacedRole.mockResolvedValue({ items: [] })
     mocks.rbacApi.listNamespacedRoleBinding.mockResolvedValue({ items: [] })
+
+    mocks.customApi.listClusterCustomObject.mockResolvedValue({ items: [] })
+    mocks.customApi.listNamespacedCustomObject.mockResolvedValue({ items: [] })
+    resetMetricsApiAvailable()
   })
 
   describe('getContexts', () => {
@@ -520,6 +529,83 @@ describe('k8s library', () => {
         created: '2023-01-01T00:00:00Z'
       })
       expect(mocks.rbacApi.listNamespacedRoleBinding).toHaveBeenCalledWith({ namespace: 'default' })
+    })
+  })
+
+  describe('getNodeMetrics', () => {
+    it('returns formatted node metrics', async () => {
+      mocks.customApi.listClusterCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: 'node-1' },
+            usage: { cpu: '100m', memory: '1Gi' },
+            timestamp: '2023-01-01T00:00:00Z',
+            window: '1m'
+          }
+        ]
+      })
+      const results = await getNodeMetrics()
+      expect(results).toHaveLength(1)
+      expect(results[0]).toEqual({
+        name: 'node-1',
+        cpu: '100m',
+        memory: '1Gi',
+        timestamp: '2023-01-01T00:00:00Z',
+        window: '1m'
+      })
+      expect(mocks.customApi.listClusterCustomObject).toHaveBeenCalledWith({
+        group: "metrics.k8s.io",
+        version: "v1beta1",
+        plural: "nodes",
+      })
+    })
+
+    it('returns empty list and silences console on 404', async () => {
+      mocks.customApi.listClusterCustomObject.mockRejectedValue({ code: 404 })
+      const results = await getNodeMetrics()
+      expect(results).toEqual([])
+    })
+  })
+
+  describe('getPodMetrics', () => {
+    it('returns formatted pod metrics', async () => {
+      mocks.customApi.listNamespacedCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: 'pod-1', namespace: 'default' },
+            containers: [
+              { name: 'container-1', usage: { cpu: '50m', memory: '512Mi' } }
+            ],
+            timestamp: '2023-01-01T00:00:00Z',
+            window: '1m'
+          }
+        ]
+      })
+      const results = await getPodMetrics('default')
+      expect(results).toHaveLength(1)
+      expect(results[0]).toEqual({
+        name: 'pod-1',
+        namespace: 'default',
+        cpu: '50m',
+        memory: '512Mi',
+        containers: [
+          { name: 'container-1', cpu: '50m', memory: '512Mi' }
+        ],
+        timestamp: '2023-01-01T00:00:00Z',
+        window: '1m'
+      })
+      expect(mocks.customApi.listNamespacedCustomObject).toHaveBeenCalledWith({
+        group: "metrics.k8s.io",
+        version: "v1beta1",
+        namespace: 'default',
+        plural: "pods",
+      })
+    })
+
+    it('returns empty list and silences console on 404', async () => {
+      mocks.customApi.listNamespacedCustomObject.mockRejectedValue({ code: 404 })
+      const results = await getPodMetrics('default')
+      expect(results).toEqual([])
     })
   })
 })

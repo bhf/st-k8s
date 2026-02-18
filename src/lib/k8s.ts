@@ -24,6 +24,7 @@ import {
   V1RoleBinding,
   Log,
   PortForward,
+  CustomObjectsApi,
 } from "@kubernetes/client-node";
 import { Writable } from "node:stream";
 import net from "node:net";
@@ -36,6 +37,7 @@ type K8sClients = {
   batch: BatchV1Api;
   networking: NetworkingV1Api;
   rbac: RbacAuthorizationV1Api;
+  custom: CustomObjectsApi;
   config: KubeConfig;
 };
 
@@ -44,7 +46,7 @@ const clientsCache = new Map<string, K8sClients>();
 function getClients(context?: string): K8sClients {
   const kc = new KubeConfig();
   kc.loadFromDefault();
-  
+
   // If no context provided, use current context from kubeconfig
   const effectiveContext = context || kc.getCurrentContext();
   const cacheKey = effectiveContext;
@@ -67,6 +69,7 @@ function getClients(context?: string): K8sClients {
     batch: kc.makeApiClient(BatchV1Api),
     networking: kc.makeApiClient(NetworkingV1Api),
     rbac: kc.makeApiClient(RbacAuthorizationV1Api),
+    custom: kc.makeApiClient(CustomObjectsApi),
     config: kc,
   };
 
@@ -331,13 +334,13 @@ export async function findPodForService(namespace: string, serviceName: string, 
   const { core } = getClients(context);
   const svc = await core.readNamespacedService({ name: serviceName, namespace });
   const selector = svc.spec?.selector;
-  
+
   if (!selector) return null;
-  
+
   const labelSelector = Object.entries(selector)
     .map(([key, value]) => `${key}=${value}`)
     .join(',');
-    
+
   const pods = await core.listNamespacedPod({ namespace, labelSelector });
   return pods.items[0]?.metadata?.name || null;
 }
@@ -358,9 +361,9 @@ export async function getPodLogs(namespace: string, podName: string, containerNa
 export async function getPodLogStream(namespace: string, podName: string, containerName: string, stream: Writable, tailLines?: number, sinceSeconds?: number, context?: string) {
   const { config } = getClients(context);
   const log = new Log(config);
-  
-  return log.log(namespace, podName, containerName, stream, { 
-    follow: true, 
+
+  return log.log(namespace, podName, containerName, stream, {
+    follow: true,
     tailLines: tailLines,
     sinceSeconds: sinceSeconds,
     pretty: false,
@@ -383,7 +386,7 @@ const activeForwards = new Map<string, { info: ActiveForward; stop: () => void }
 export async function startPortForward(namespace: string, podName: string, containerPort: number, localPort?: number, localAddress: string = '127.0.0.1', context?: string): Promise<ActiveForward> {
   const { config } = getClients(context);
   const pf = new PortForward(config);
-  
+
   const server = net.createServer((socket) => {
     pf.portForward(namespace, podName, [containerPort], socket, null, socket);
   });
@@ -392,7 +395,7 @@ export async function startPortForward(namespace: string, podName: string, conta
     server.listen(localPort || 0, localAddress, () => {
       const address = server.address() as net.AddressInfo;
       const id = `${namespace}-${podName}-${containerPort}-${address.port}`;
-      
+
       const info: ActiveForward = {
         id,
         namespace,
@@ -402,9 +405,9 @@ export async function startPortForward(namespace: string, podName: string, conta
         localAddress: address.address,
         created: new Date()
       };
-      
-      activeForwards.set(id, { 
-        info, 
+
+      activeForwards.set(id, {
+        info,
         stop: () => {
           server.close();
           activeForwards.delete(id);
@@ -412,7 +415,7 @@ export async function startPortForward(namespace: string, podName: string, conta
       });
       resolve(info);
     });
-    
+
     server.on('error', (err) => {
       console.error('Port forward server error:', err);
       reject(err);
@@ -431,4 +434,121 @@ export async function stopPortForward(id: string) {
 
 export function listPortForwards(): ActiveForward[] {
   return Array.from(activeForwards.values()).map(f => f.info);
+}
+
+let metricsApiAvailable: boolean | null = null;
+
+export function resetMetricsApiAvailable() {
+  metricsApiAvailable = null;
+}
+
+export async function isMetricsAvailable() {
+  // If we already know the status, return it
+  if (metricsApiAvailable !== null) return metricsApiAvailable;
+
+  // Try a quick check by calling getNodeMetrics
+  await getNodeMetrics();
+  return metricsApiAvailable || false;
+}
+
+async function checkMetricsApi(context?: string) {
+  if (metricsApiAvailable !== null) return metricsApiAvailable;
+
+  const { config } = getClients(context);
+  try {
+    const kc = config;
+    const cluster = kc.getCurrentCluster();
+    if (!cluster) return false;
+
+    // We can't easily check 'apis' via client-node without more boilerplate,
+    // so we'll just do a test call and cache the result.
+    metricsApiAvailable = false;
+    return false;
+  } catch (e) {
+    metricsApiAvailable = false;
+    return false;
+  }
+}
+
+export async function getNodeMetrics(context?: string) {
+  if (metricsApiAvailable === false) return [];
+
+  const { custom } = getClients(context);
+  try {
+    const res = await custom.listClusterCustomObject({
+      group: "metrics.k8s.io",
+      version: "v1beta1",
+      plural: "nodes",
+    }) as { items: Array<{ metadata: { name: string }, usage: { cpu: string, memory: string }, timestamp: string, window: string }> };
+
+    metricsApiAvailable = true;
+    return (res.items || []).map((node) => ({
+      name: node.metadata.name,
+      cpu: node.usage.cpu,
+      memory: node.usage.memory,
+      timestamp: node.timestamp,
+      window: node.window,
+    }));
+  } catch (err: any) {
+    if (err.code === 404 || err.status === 404) {
+      metricsApiAvailable = false;
+    } else {
+      console.error("Failed to fetch node metrics:", err);
+    }
+    return [];
+  }
+}
+
+export async function getPodMetrics(namespace: string, context?: string) {
+  if (metricsApiAvailable === false) return [];
+
+  const { custom } = getClients(context);
+  try {
+    const res = await custom.listNamespacedCustomObject({
+      group: "metrics.k8s.io",
+      version: "v1beta1",
+      namespace,
+      plural: "pods",
+    }) as { items: Array<{ metadata: { name: string, namespace: string }, containers: Array<{ name: string, usage: { cpu: string, memory: string } }>, timestamp: string, window: string }> };
+
+    metricsApiAvailable = true;
+    return (res.items || []).map((pod) => {
+      const cpuNanocores = pod.containers.reduce((acc, c) => {
+        const val = c.usage.cpu;
+        if (val.endsWith('n')) return acc + parseFloat(val);
+        if (val.endsWith('u')) return acc + parseFloat(val) * 1000;
+        if (val.endsWith('m')) return acc + parseFloat(val) * 1000000;
+        return acc + parseFloat(val) * 1000000000;
+      }, 0);
+
+      const memKi = pod.containers.reduce((acc, c) => {
+        const val = c.usage.memory;
+        if (val.endsWith('Ki')) return acc + parseFloat(val);
+        if (val.endsWith('Mi')) return acc + parseFloat(val) * 1024;
+        if (val.endsWith('Gi')) return acc + parseFloat(val) * 1024 * 1024;
+        return acc + parseFloat(val) / 1024;
+      }, 0);
+
+      return {
+        name: pod.metadata.name,
+        namespace: pod.metadata.namespace,
+        cpu: `${Math.round(cpuNanocores / 1000000)}m`,
+        memory: `${Math.round(memKi / 1024)}Mi`,
+        containers: pod.containers.map((container) => ({
+          name: container.name,
+          cpu: container.usage.cpu,
+          memory: container.usage.memory,
+        })),
+        timestamp: pod.timestamp,
+        window: pod.window,
+      };
+    });
+  } catch (err: any) {
+    if (err.code === 404 || err.status === 404) {
+      metricsApiAvailable = false;
+    } else {
+      console.error(`Failed to fetch pod metrics for namespace ${namespace}:`, err);
+    }
+    return [];
+  }
 }
