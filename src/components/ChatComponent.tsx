@@ -235,14 +235,14 @@ export default function ChatComponent({
         {messages.map((msg, idx) => (
           <div
             key={idx}
-            className={`flex \${msg.role === "user" ? "justify-end" : "justify-start"
-              }\`}
+            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"
+              }`}
           >
             <div
-              className={`max-w-[80%] px-4 py-2 rounded-lg text-sm whitespace-pre-line \${msg.role === "user"
+              className={`max-w-[80%] px-4 py-2 rounded-lg text-sm whitespace-pre-line ${msg.role === "user"
                 ? "bg-blue-600 text-white rounded-br-none"
                 : "bg-zinc-800 text-zinc-100 rounded-bl-none border border-zinc-700"
-                }\`}
+                }`}
             >
               {msg.content}
             </div>
@@ -287,7 +287,7 @@ export default function ChatComponent({
                   type="button"
                   onClick={() => removeAttachment(res.id)}
                   className="hover:text-white transition-colors p-0.5"
-                  aria-label={\`Remove \${res.name}\`}
+                  aria-label={`Remove ${res.name}`}
                 >
                   <X className="w-3 h-3" />
                 </button>

@@ -64,7 +64,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
             const newAttachment: AttachedResource = {
                 ...resource,
-                id: \`\${resource.type}-\${resource.name}-\${Date.now()}\`,
+                id: `${resource.type}-${resource.name}-${Date.now()}`,
             };
             return [...prev, newAttachment];
         });

@@ -39,17 +39,17 @@ function LogViewer() {
     setLogs(["Fetching logs..."]);
 
     try {
-      const res = await fetch(`/api/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}&tailLines=${tailLines}${sinceSeconds > 0 ? \`&sinceSeconds=\${sinceSeconds}\` : ''}`);
+      const res = await fetch(`/api/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}&tailLines=${tailLines}${sinceSeconds > 0 ? `&sinceSeconds=${sinceSeconds}` : ''}`);
       const data = await res.json();
       if (data.data) {
         setLogs(data.data.split("\n"));
         toast.success("Logs refreshed");
       } else if (data.error) {
-        setLogs([\`Error: \${data.error}\`]);
-        toast.error(\`Error: \${data.error}\`);
+        setLogs([`Error: ${data.error}`]);
+        toast.error(`Error: ${data.error}`);
       }
     } catch (err) {
-      setLogs([\`Fetch failed: \${err}\`]);
+      setLogs([`Fetch failed: ${err}`]);
       toast.error("Fetch failed");
     }
   }, [podName, containerName, namespace, tailLines, sinceSeconds]);
@@ -70,7 +70,7 @@ function LogViewer() {
 
     try {
       const res = await fetch(
-        \`/api/tools/k8s-pod-logs?namespace=\${namespace}&podName=\${podName}&containerName=\${containerName}&stream=true&tailLines=\${tailLines}\${sinceSeconds > 0 ? \`&sinceSeconds=\${sinceSeconds}\` : ''}\`,
+        `/api/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}&stream=true&tailLines=${tailLines}${sinceSeconds > 0 ? `&sinceSeconds=${sinceSeconds}` : ''}`,
         { signal: abortControllerRef.current.signal }
       );
 
@@ -89,7 +89,7 @@ function LogViewer() {
       if (err instanceof Error && err.name === 'AbortError') {
         console.log('Stream aborted');
       } else {
-        setLogs(prev => [...prev, \`Streaming error: \${err}\`]);
+        setLogs(prev => [...prev, `Streaming error: ${err}`]);
       }
     } finally {
       setIsStreaming(false);
@@ -120,7 +120,7 @@ function LogViewer() {
     const a = document.createElement("a");
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     a.href = url;
-    a.download = \`\${podName}-\${containerName}-\${timestamp}.log\`;
+    a.download = `${podName}-${containerName}-${timestamp}.log`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -146,7 +146,7 @@ function LogViewer() {
   const addToChat = () => {
     if (!selection) return;
     addAttachment({
-      name: \`Log snippet from \${podName}\`,
+      name: `Log snippet from ${podName}`,
       type: 'log-snippet',
       data: {
         pod: podName,
@@ -251,8 +251,8 @@ function LogViewer() {
             <div
               className="fixed z-50 animate-in fade-in zoom-in duration-200"
               style={{
-                left: \`\${selection.x}px\`,
-                top: \`\${selection.y}px\`,
+                left: `${selection.x}px`,
+                top: `${selection.y}px`,
                 transform: 'translate(-50%, -100%)'
               }}
             >
