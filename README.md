@@ -11,7 +11,7 @@
 View and chat to your Kubernetes cluster.
 
 
-Features a dashboard (with a K9s inspired dark theme and keyboard navigation), REST API, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview). 
+Features a dashboard (with a K9s inspired dark theme and keyboard navigation), REST API, port forwarding management, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview). 
 Integrates with VSCode and Copilot.
 
 ![img.png](docs/chat_1.png)
@@ -35,11 +35,20 @@ View, copy and download streaming logs.
 
 ![alt text](docs/logview.png)
 
+## Port Forwarding
+
+Manage Kubernetes port forwarding sessions directly from the dashboard or through AI chat. Supports both Pods and Services.
+
+- **Dynamic Config**: Specify target ports and local interface bindings.
+- **Service Mapping**: Automatically resolves Service targets to active Pods.
+- **Agentic Control**: Start or stop forwards using natural language through the Copilot integration or MCP server.
+
 ## Table of Contents
 
 - [ST-K8s](#st-k8s)
   - [Keyboard Navigation](#keyboard-navigation)
   - [Log Viewer](#log-viewer)
+  - [Port Forwarding](#port-forwarding)
   - [Table of Contents](#table-of-contents)
   - [How to Run](#how-to-run)
     - [Using the `st-k8s` CLI](#using-the-st-k8s-cli)
@@ -154,6 +163,9 @@ Exposes read-only Kubernetes operations as tools:
 - `list_roles`
 - `list_rolebindings`
 - `get_pod_logs`
+- `list_port_forwards`
+- `start_port_forward`
+- `stop_port_forward`
 
 [Back to Top](#top)
 
