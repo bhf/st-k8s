@@ -5,30 +5,20 @@ import Sidebar, { ToolType } from '../Sidebar'
 
 describe('Sidebar', () => {
   const defaultProps = {
-    contexts: [{ name: 'ctx-1', isCurrent: true }],
-    selectedContext: 'ctx-1',
-    onSelectContext: vi.fn(),
-    namespaces: ['default', 'kube-system'],
-    selectedNamespace: 'default',
-    onSelectNamespace: vi.fn(),
     selectedTool: 'pod-resources' as ToolType,
-    onSelectTool: vi.fn(),
-    isLoadingNamespaces: false,
-    isLoadingContexts: false
+    onSelectTool: vi.fn()
   }
 
-  it('renders namespaces when not loading', () => {
+  it('renders tool list', () => {
     render(<Sidebar {...defaultProps} />)
-    const select = screen.getByLabelText(/namespace/i) as HTMLSelectElement
-    expect(select.options.length).toBe(2)
-    expect(select.options[0].text).toBe('default')
+    expect(screen.getByText(/Pod Resources/i)).toBeDefined()
+    expect(screen.getByText(/Deployments/i)).toBeDefined()
   })
 
-  it('renders loading indicator in namespaces dropdown when loading', () => {
-    render(<Sidebar {...defaultProps} isLoadingNamespaces={true} />)
-    const select = screen.getByLabelText(/namespace/i) as HTMLSelectElement
-    expect(select.options.length).toBe(1)
-    expect(select.options[0].text).toBe('Loading namespaces...')
-    expect(select).toBeDisabled()
+  it('calls onSelectTool when a tool is clicked', async () => {
+    render(<Sidebar {...defaultProps} />)
+    const button = screen.getByText(/Deployments/i).closest('button')
+    button?.click()
+    expect(defaultProps.onSelectTool).toHaveBeenCalledWith('deployments')
   })
 })
