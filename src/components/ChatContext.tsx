@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 
 export interface AttachedResource {
     id: string;
@@ -19,7 +19,40 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-    const [attachedResources, setAttachedResources] = useState<AttachedResource[]>([]);
+    const [attachedResources, setAttachedResources] = useState<AttachedResource[]>(() => {
+        // Initial load from localStorage
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("chat_attachments");
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    console.error("Failed to parse saved chat attachments", e);
+                }
+            }
+        }
+        return [];
+    });
+
+    // Persist to localStorage
+    useEffect(() => {
+        localStorage.setItem("chat_attachments", JSON.stringify(attachedResources));
+    }, [attachedResources]);
+
+    // Sync across tabs
+    useEffect(() => {
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === "chat_attachments" && e.newValue) {
+                try {
+                    setAttachedResources(JSON.parse(e.newValue));
+                } catch (err) {
+                    console.error("Sync error", err);
+                }
+            }
+        };
+        window.addEventListener("storage", handleStorage);
+        return () => window.removeEventListener("storage", handleStorage);
+    }, []);
 
     const addAttachment = useCallback((resource: Omit<AttachedResource, "id">) => {
         setAttachedResources((prev) => {
@@ -31,7 +64,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
             const newAttachment: AttachedResource = {
                 ...resource,
-                id: `${resource.type}-${resource.name}-${Date.now()}`,
+                id: \`\${resource.type}-\${resource.name}-\${Date.now()}\`,
             };
             return [...prev, newAttachment];
         });
