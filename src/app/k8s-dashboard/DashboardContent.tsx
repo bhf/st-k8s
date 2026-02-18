@@ -223,6 +223,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
               onClick={() => setViewMode("grid")}
               className="rounded-none h-8 w-8"
               title="Grid View"
+              aria-label="Grid view"
             >
               <Grid className="h-4 w-4" />
             </Button>
@@ -232,6 +233,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
               onClick={() => setViewMode("table")}
               className="rounded-none h-8 w-8"
               title="Table View"
+              aria-label="Table view"
             >
               <List className="h-4 w-4" />
             </Button>
@@ -266,13 +268,13 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" role="status" aria-label="Loading contents...">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       )}
 
       {error && (
-        <Card className="border-red-200 bg-red-50 dark:bg-red-900/20">
+        <Card className="border-red-200 bg-red-50 dark:bg-red-900/20" role="alert">
           <CardContent className="pt-6 text-red-600 dark:text-red-400">
             Error: {error}
           </CardContent>
@@ -416,6 +418,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
                   setPfPorts({ remote: "8080", local: "8080", address: "127.0.0.1" });
                 }}
                 title="Port Forward"
+                aria-label={`Port forward for pod ${podName}`}
               >
                 <Zap className="h-3 w-3" />
               </Button>
@@ -443,6 +446,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
                 setPfPorts({ remote: "80", local: "80", address: "127.0.0.1" });
               }}
               title="Port Forward"
+              aria-label={`Port forward for service ${serviceName}`}
             >
               <Zap className="h-3 w-3" />
             </Button>
@@ -466,6 +470,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
               className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-red-500/10"
               onClick={() => handleStopPortForward(id)}
               title="Stop Forward"
+              aria-label={`Stop port forward ${id}`}
             >
               <XCircle className="h-4 w-4" />
             </Button>
@@ -496,6 +501,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
               toast.success(`Attached ${name} to chat`);
             }}
             title="Add to Chat"
+            aria-label={`Add resource ${name} to chat`}
           >
             <MessageSquarePlus className="h-4 w-4" />
           </Button>
@@ -674,6 +680,7 @@ function ResourceCard({ item, tool }: { item: Record<string, unknown>, tool?: st
             toast.success(`Attached ${name} to chat`);
           }}
           title="Add to Chat"
+          aria-label={`Add resource ${name} to chat`}
         >
           <MessageSquarePlus className="h-4 w-4" />
         </Button>

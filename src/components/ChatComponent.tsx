@@ -170,6 +170,7 @@ export default function ChatComponent({
                 variant="outline"
                 size="sm"
                 className="h-7 gap-1 bg-zinc-800 border-zinc-700 text-zinc-200 text-xs px-2 hover:bg-zinc-700 hover:text-white"
+                aria-label="Select AI model"
               >
                 {model}
                 <ChevronDown className="h-3 w-3 opacity-50" />
@@ -257,7 +258,7 @@ export default function ChatComponent({
           </div>
         )}
         {error && (
-          <div className="flex justify-center">
+          <div className="flex justify-center" role="alert">
             <div className="text-red-400 text-xs mt-2">{error}</div>
           </div>
         )}
