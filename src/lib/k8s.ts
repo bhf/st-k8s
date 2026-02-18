@@ -451,24 +451,6 @@ export async function isMetricsAvailable() {
   return metricsApiAvailable || false;
 }
 
-async function checkMetricsApi(context?: string) {
-  if (metricsApiAvailable !== null) return metricsApiAvailable;
-
-  const { config } = getClients(context);
-  try {
-    const kc = config;
-    const cluster = kc.getCurrentCluster();
-    if (!cluster) return false;
-
-    // We can't easily check 'apis' via client-node without more boilerplate,
-    // so we'll just do a test call and cache the result.
-    metricsApiAvailable = false;
-    return false;
-  } catch (e) {
-    metricsApiAvailable = false;
-    return false;
-  }
-}
 
 export async function getNodeMetrics(context?: string) {
   if (metricsApiAvailable === false) return [];
