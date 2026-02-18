@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useChat } from "./ChatContext";
 
 // Message type
 type Message = {
@@ -42,6 +43,8 @@ export default function ChatComponent({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { attachedResources, removeAttachment } = useChat();
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Sync controlled prop
@@ -57,9 +60,9 @@ export default function ChatComponent({
         if (res.ok) {
           const data = await res.json();
           if (data.models && Array.isArray(data.models)) {
-             setAvailableModels(data.models);
-             // Verify if current default model exists in the list?
-             // Not strictly necessary, but good UX.
+            setAvailableModels(data.models);
+            // Verify if current default model exists in the list?
+            // Not strictly necessary, but good UX.
           }
         }
       } catch (err) {
@@ -97,7 +100,15 @@ export default function ChatComponent({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg.content, model }),
+        body: JSON.stringify({
+          message: userMsg.content,
+          model,
+          attachments: attachedResources.map(r => ({
+            name: r.name,
+            type: r.type,
+            data: r.data
+          }))
+        }),
       });
 
       if (!res.ok) throw new Error("Failed to get response");
@@ -220,16 +231,14 @@ export default function ChatComponent({
         {messages.map((msg, idx) => (
           <div
             key={idx}
-            className={`flex ${
-              msg.role === "user" ? "justify-end" : "justify-start"
-            }`}
+            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"
+              }`}
           >
             <div
-              className={`max-w-[80%] px-4 py-2 rounded-lg text-sm whitespace-pre-line ${
-                msg.role === "user"
-                  ? "bg-blue-600 text-white rounded-br-none"
-                  : "bg-zinc-800 text-zinc-100 rounded-bl-none border border-zinc-700"
-              }`}
+              className={`max-w-[80%] px-4 py-2 rounded-lg text-sm whitespace-pre-line ${msg.role === "user"
+                ? "bg-blue-600 text-white rounded-br-none"
+                : "bg-zinc-800 text-zinc-100 rounded-bl-none border border-zinc-700"
+                }`}
             >
               {msg.content}
             </div>
@@ -249,6 +258,29 @@ export default function ChatComponent({
           </div>
         )}
       </div>
+
+      {/* Attachments Area */}
+      {attachedResources.length > 0 && (
+        <div className="px-4 py-2 bg-zinc-950 border-t border-zinc-800 flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+          {attachedResources.map((res) => (
+            <div
+              key={res.id}
+              className="flex items-center gap-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full text-[10px] font-medium animate-in fade-in zoom-in duration-200"
+            >
+              <span className="opacity-70 uppercase truncate max-w-[40px]">{res.type}</span>
+              <span className="font-bold truncate max-w-[80px]">{res.name}</span>
+              <button
+                type="button"
+                onClick={() => removeAttachment(res.id)}
+                className="hover:text-white transition-colors p-0.5"
+                aria-label={`Remove ${res.name}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Input */}
       <form

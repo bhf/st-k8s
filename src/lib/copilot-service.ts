@@ -1,63 +1,63 @@
 import { z } from "zod";
 import { CopilotClient, defineTool } from "@github/copilot-sdk";
 import {
-  getNamespaces,
-  getPods,
-  getDeployments,
-  getServices,
-  getDaemonSets,
-  getReplicaSets,
-  getStatefulSets,
-  getIngresses,
-  getEndpoints,
-  getEvents,
-  getPVCs,
-  getNodes,
-  getConfigMaps,
-  getJobs,
-  getCronJobs,
-  getServiceAccounts,
-  getRoles,
-  getRoleBindings,
-  getPodLogs,
-  getContexts,
-  startPortForward,
-  stopPortForward,
-  listPortForwards,
-  findPodForService
+    getNamespaces,
+    getPods,
+    getDeployments,
+    getServices,
+    getDaemonSets,
+    getReplicaSets,
+    getStatefulSets,
+    getIngresses,
+    getEndpoints,
+    getEvents,
+    getPVCs,
+    getNodes,
+    getConfigMaps,
+    getJobs,
+    getCronJobs,
+    getServiceAccounts,
+    getRoles,
+    getRoleBindings,
+    getPodLogs,
+    getContexts,
+    startPortForward,
+    stopPortForward,
+    listPortForwards,
+    findPodForService
 } from "./k8s";
 
 // Define tools
 const listContextsTool = defineTool("list_contexts", {
-  description: "List all available Kubernetes contexts from kubeconfig",
-  parameters: z.object({}),
-  handler: async () => {
-    const contexts = await getContexts();
-    return JSON.stringify(contexts);
-  },
+    description: "List all available Kubernetes contexts from kubeconfig",
+    parameters: z.object({}),
+    handler: async () => {
+        const contexts = await getContexts();
+        return JSON.stringify(contexts);
+    },
 });
 
 const listNamespacesTool = defineTool("list_namespaces", {
-  description: "List all Kubernetes namespaces",
-  parameters: z.object({
-    context: z.string().optional().describe("Kubernetes context (optional)"),
-  }),
-  handler: async ({ context }) => {
-    const namespaces = await getNamespaces(context);
-    return JSON.stringify(namespaces);
-  },
+    description: "List all Kubernetes namespaces",
+    parameters: z.object({
+        context: z.string().optional().describe("Kubernetes context (optional)"),
+    }),
+    handler: async ({ context }) => {
+        const namespaces = await getNamespaces(context);
+        return JSON.stringify(namespaces);
+    },
 });
 
 const listPodsTool = defineTool("list_pods", {
-  description: "List pods and their resources in a namespace",
-  parameters: z.object({
-    namespace: z.string().describe("Kubernetes namespace"),
-    context: z.string().optional().describe("Kubernetes context (optional)"),
-  }),
-  handler: async ({ namespace, context }) => {
-    const pods = await getPods(namespace, context);
-    return JSON.stringify(pods);
-  },
+    description: "List pods and their resources in a namespace",
+    parameters: z.object({
+        namespace: z.string().describe("Kubernetes namespace"),
+        context: z.string().optional().describe("Kubernetes context (optional)"),
+    }),
+    handler: async ({ namespace, context }) => {
+        const pods = await getPods(namespace, context);
+        return JSON.stringify(pods);
+    },
 });
 
 const listDeploymentsTool = defineTool("list_deployments", {
@@ -324,69 +324,75 @@ let session: CopilotSession | null = null;
 let currentModel: string | null = null;
 
 export async function getSession(model: string = "gpt-4o") {
-  console.log(`[CopilotService] getSession called with model: ${model}`);
-  console.log(`[CopilotService] Current active model: ${currentModel}`);
-  
-  if (session && currentModel === model) {
-    console.log(`[CopilotService] Reusing existing session for model: ${model}`);
-    return session;
-  }
+    console.log(`[CopilotService] getSession called with model: ${model}`);
+    console.log(`[CopilotService] Current active model: ${currentModel}`);
 
-  // If we have an existing session but need a different model, destroy the old one
-  if (session) {
-    console.log(`[CopilotService] Destroying old session (model: ${currentModel}) to switch to ${model}`);
-    try {
-      await session.destroy();
-    } catch (err) {
-      console.warn("[CopilotService] Error destroying old session:", err);
+    if (session && currentModel === model) {
+        console.log(`[CopilotService] Reusing existing session for model: ${model}`);
+        return session;
     }
-    session = null;
-  }
 
-  console.log(`[CopilotService] Creating NEW session for model: ${model}`);
+    // If we have an existing session but need a different model, destroy the old one
+    if (session) {
+        console.log(`[CopilotService] Destroying old session (model: ${currentModel}) to switch to ${model}`);
+        try {
+            await session.destroy();
+        } catch (err) {
+            console.warn("[CopilotService] Error destroying old session:", err);
+        }
+        session = null;
+    }
 
-  if (!client) {
-    client = new CopilotClient({ logLevel: "info" });
-  }
+    console.log(`[CopilotService] Creating NEW session for model: ${model}`);
 
-  session = await client.createSession({
-    model,
-    tools: [
-        listContextsTool,
-        listNamespacesTool,
-        listPodsTool,
-        listDeploymentsTool,
-        listServicesTool,
-        listDaemonSetsTool,
-        listReplicaSetsTool,
-        listStatefulSetsTool,
-        listIngressesTool,
-        listEndpointsTool,
-        listEventsTool,
-        listPVCsTool,
-        listNodesTool,
-        listConfigMapsTool,
-        listJobsTool,
-        listCronJobsTool,
-        listServiceAccountsTool,
-        listRolesTool,
-        listRoleBindingsTool,
-        getPodLogsTool,
-        startPortForwardTool,
-        stopPortForwardTool,
-        listPortForwardsTool
-    ]
-  });
-  currentModel = model;
-  console.log(`[CopilotService] Session created. currentModel updated to: ${currentModel}`);
+    if (!client) {
+        client = new CopilotClient({ logLevel: "info" });
+    }
 
-  return session;
+    session = await client.createSession({
+        model,
+        tools: [
+            listContextsTool,
+            listNamespacesTool,
+            listPodsTool,
+            listDeploymentsTool,
+            listServicesTool,
+            listDaemonSetsTool,
+            listReplicaSetsTool,
+            listStatefulSetsTool,
+            listIngressesTool,
+            listEndpointsTool,
+            listEventsTool,
+            listPVCsTool,
+            listNodesTool,
+            listConfigMapsTool,
+            listJobsTool,
+            listCronJobsTool,
+            listServiceAccountsTool,
+            listRolesTool,
+            listRoleBindingsTool,
+            getPodLogsTool,
+            startPortForwardTool,
+            stopPortForwardTool,
+            listPortForwardsTool
+        ]
+    });
+    currentModel = model;
+    console.log(`[CopilotService] Session created. currentModel updated to: ${currentModel}`);
+
+    return session;
 }
 
-export async function sendMessage(message: string, model: string = "gpt-4o") {
+export async function sendMessage(message: string, model: string = "gpt-4o", attachments?: { name: string, type: string, data: unknown }[]) {
     const sess = await getSession(model);
-    // Use sendAndWait as per example
-    const result = await sess.sendAndWait({ prompt: message });
+
+    let fullPrompt = message;
+    if (attachments && attachments.length > 0) {
+        const contextStr = attachments.map(a => `[Attached ${a.type}: ${a.name}]\n${JSON.stringify(a.data, null, 2)}`).join("\n\n");
+        fullPrompt = `I have attached the following Kubernetes resource context to this conversation:\n\n${contextStr}\n\nUser Message: ${message}`;
+    }
+
+    const result = await sess.sendAndWait({ prompt: fullPrompt });
 
     if (!result) {
         throw new Error("Failed to get response from Copilot");
@@ -396,24 +402,24 @@ export async function sendMessage(message: string, model: string = "gpt-4o") {
 }
 
 export async function getModels() {
-  if (!client) {
-    client = new CopilotClient({ logLevel: "info" });
-  }
-  
-  try {
-      if (client.getState() === "disconnected") {
-           await client.start();
-      }
+    if (!client) {
+        client = new CopilotClient({ logLevel: "info" });
+    }
 
-      const models = await client.listModels();
-      return models;
-  } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes("Not authenticated")) {
-          console.warn("[CopilotService] Not authenticated with GitHub Copilot. Chat features will be disabled until authenticated.");
-      } else {
-          console.error("Failed to list models:", error);
-      }
-      return [];
-  }
+    try {
+        if (client.getState() === "disconnected") {
+            await client.start();
+        }
+
+        const models = await client.listModels();
+        return models;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.includes("Not authenticated")) {
+            console.warn("[CopilotService] Not authenticated with GitHub Copilot. Chat features will be disabled until authenticated.");
+        } else {
+            console.error("Failed to list models:", error);
+        }
+        return [];
+    }
 }

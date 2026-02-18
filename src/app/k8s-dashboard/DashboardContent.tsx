@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToolType } from "./Sidebar";
-import { Grid, List, Download, Zap, XCircle } from "lucide-react";
+import { Grid, List, Download, Zap, XCircle, MessageSquarePlus } from "lucide-react";
+import { useChat } from "@/components/ChatContext";
 import { RefreshSelector } from "@/components/RefreshSelector";
 import { useRefresh } from "@/lib/refresh-context";
 import { toast } from "sonner";
@@ -43,6 +44,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const { autoRefresh, interval, triggerRefresh, setLastUpdated } = useRefresh();
+  const { addAttachment } = useChat();
 
   const downloadCSV = () => {
     if (!data || data.length === 0) return;
@@ -52,7 +54,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
     data.forEach(item => {
       Object.keys(item).forEach(key => {
         if (key !== 'metadata') {
-           allKeys.add(key);
+          allKeys.add(key);
         }
       });
     });
@@ -73,11 +75,11 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
         }
         val = String(val ?? "");
         // Escape quotes
-        // @ts-expect-error
-          val = val.replace(/"/g, '""');
+        // @ts-expect-error: Replacement requires string type
+        val = val.replace(/"/g, '""');
         // Wrap in quotes if it contains comma, quote or newline
-        // @ts-expect-error
-          if (val.search(/("|,|\n)/g) >= 0) {
+        // @ts-expect-error: Search requires string type
+        if (val.search(/("|,|\n)/g) >= 0) {
           val = `"${val}"`;
         }
         return val;
@@ -156,8 +158,8 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
         if (arrayKey) {
           newData = json[arrayKey];
         } else {
-           newData = [];
-           console.warn("Could not find array data in response", json);
+          newData = [];
+          console.warn("Could not find array data in response", json);
         }
       }
       setData(newData);
@@ -234,9 +236,31 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
               <List className="h-4 w-4" />
             </Button>
           </div>
-          <Button variant="outline" onClick={downloadCSV} size="sm" disabled={data.length === 0 || loading}>
+          <Button
+            variant="outline"
+            onClick={downloadCSV}
+            size="sm"
+            disabled={data.length === 0 || loading}
+          >
             <Download className="h-4 w-4 mr-2" />
             CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-blue-500 hover:text-blue-400 border-blue-500/20 hover:bg-blue-500/10"
+            disabled={data.length === 0 || loading}
+            onClick={() => {
+              addAttachment({
+                name: `All ${tool.replace("-", " ")}`,
+                type: 'collection',
+                data: data
+              });
+              toast.success(`Attached all ${data.length} ${tool.replace("-", " ")} to chat`);
+            }}
+          >
+            <MessageSquarePlus className="h-4 w-4 mr-2" />
+            Add All to Chat
           </Button>
         </div>
       </div>
@@ -266,7 +290,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
           {viewMode === "grid" ? (
             <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
               {data.map((item, i) => (
-                <ResourceCard key={i} item={item} />
+                <ResourceCard key={i} item={item} tool={tool} />
               ))}
             </div>
           ) : (
@@ -280,12 +304,11 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
 
 function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown>[], tool?: ToolType, namespace?: string }) {
   const { refresh } = useRefresh();
-  const [pfTarget, setPfTarget] = useState<{podName?: string, serviceName?: string} | null>(null);
+  const { addAttachment } = useChat();
+  const [pfTarget, setPfTarget] = useState<{ podName?: string, serviceName?: string } | null>(null);
   const [pfPorts, setPfPorts] = useState({ remote: "8080", local: "8080", address: "127.0.0.1" });
 
-  if (data.length === 0) return null;
-
-  const handlePortForward = async (params: { podName?: string, serviceName?: string, containerPort: number, localPort?: number, localAddress?: string }) => {
+  const handlePortForward = useCallback(async (params: { podName?: string, serviceName?: string, containerPort: number, localPort?: number, localAddress?: string }) => {
     try {
       const res = await fetch('/api/tools/k8s-port-forward', {
         method: 'POST',
@@ -306,9 +329,9 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
     } catch (err) {
       toast.error(`Failed: ${err instanceof Error ? err.message : String(err)}`);
     }
-  };
+  }, [namespace, refresh]);
 
-  const handleStopPortForward = async (id: string) => {
+  const handleStopPortForward = useCallback(async (id: string) => {
     try {
       const res = await fetch('/api/tools/k8s-port-forward', {
         method: 'DELETE',
@@ -324,10 +347,9 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
     } catch (err) {
       toast.error(`Failed: ${err instanceof Error ? err.message : String(err)}`);
     }
-  };
+  }, [refresh]);
 
   // Determine columns from ALL items to handle sparse data
-    // eslint-disable-next-line react-hooks/rules-of-hooks
   const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(() => {
     const allKeys = new Set<string>();
     data.forEach((item) => {
@@ -353,16 +375,15 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           return JSON.stringify(val);
         }
         if (key === 'status' || key === 'phase') {
-           const status = String(val);
-           return (
-             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-               status === 'Running' || status === 'Active' || status === 'Succeeded' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-               status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
-               'bg-red-500/10 text-red-500 border border-red-500/20'
-             }`}>
-               {status}
-             </span>
-           );
+          const status = String(val);
+          return (
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${status === 'Running' || status === 'Active' || status === 'Succeeded' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+              status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
+                'bg-red-500/10 text-red-500 border border-red-500/20'
+              }`}>
+              {status}
+            </span>
+          );
         }
         return String(val);
       },
@@ -370,104 +391,134 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
     }));
 
     if (tool === 'pod-resources' && namespace) {
-       baseCols.push({
-         id: 'actions',
-         header: 'Actions',
-         cell: (info) => {
-           const row = info.row.original;
-           const podName = String(row.podName || '');
-           const containerName = String(row.containerName || '');
-           return (
-             <div className="flex gap-2 items-center">
-               <a 
-                 href={`/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}`}
-                 className="text-blue-500 hover:text-blue-400 text-[10px] font-semibold underline underline-offset-2"
-                 target="_blank"
-               >
-                 Logs
-               </a>
-               <Button 
-                variant="ghost" 
-                size="icon" 
+      baseCols.push({
+        id: 'actions',
+        header: 'Actions',
+        cell: (info) => {
+          const row = info.row.original;
+          const podName = String(row.podName || '');
+          const containerName = String(row.containerName || '');
+          return (
+            <div className="flex gap-2 items-center">
+              <a
+                href={`/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}`}
+                className="text-blue-500 hover:text-blue-400 text-[10px] font-semibold underline underline-offset-2"
+                target="_blank"
+              >
+                Logs
+              </a>
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-6 w-6 text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
                 onClick={() => {
                   setPfTarget({ podName });
                   setPfPorts({ remote: "8080", local: "8080", address: "127.0.0.1" });
                 }}
                 title="Port Forward"
-               >
-                 <Zap className="h-3 w-3" />
-               </Button>
-             </div>
-           );
-         },
-         size: 100
-       });
+              >
+                <Zap className="h-3 w-3" />
+              </Button>
+            </div>
+          );
+        },
+        size: 100
+      });
     }
 
     if (tool === 'services' && namespace) {
-       baseCols.push({
-         id: 'actions',
-         header: 'Actions',
-         cell: (info) => {
-           const row = info.row.original;
-           const serviceName = String(row.name || '');
-           return (
-             <Button 
-              variant="ghost" 
-              size="icon" 
+      baseCols.push({
+        id: 'actions',
+        header: 'Actions',
+        cell: (info) => {
+          const row = info.row.original;
+          const serviceName = String(row.name || '');
+          return (
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-6 w-6 text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
               onClick={() => {
                 setPfTarget({ serviceName });
                 setPfPorts({ remote: "80", local: "80", address: "127.0.0.1" });
               }}
               title="Port Forward"
-             >
-               <Zap className="h-3 w-3" />
-             </Button>
-           );
-         },
-         size: 80
-       });
+            >
+              <Zap className="h-3 w-3" />
+            </Button>
+          );
+        },
+        size: 80
+      });
     }
 
     if (tool === 'port-forwards') {
-       baseCols.push({
-         id: 'actions',
-         header: 'Actions',
-         cell: (info) => {
-           const row = info.row.original;
-           const id = String(row.id || '');
-           return (
-             <Button 
-              variant="ghost" 
-              size="icon" 
+      baseCols.push({
+        id: 'actions',
+        header: 'Actions',
+        cell: (info) => {
+          const row = info.row.original;
+          const id = String(row.id || '');
+          return (
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-red-500/10"
               onClick={() => handleStopPortForward(id)}
               title="Stop Forward"
-             >
-               <XCircle className="h-4 w-4" />
-             </Button>
-           );
-         },
-         size: 80
-       });
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+          );
+        },
+        size: 80
+      });
     }
 
-    return baseCols;
-  }, [data, tool, namespace, handlePortForward, handleStopPortForward]);
+    // Add to Chat action
+    baseCols.push({
+      id: 'chat',
+      header: '',
+      cell: (info) => {
+        const row = info.row.original;
+        const name = String(row.name || row.podName || (row.metadata as { name?: string })?.name || '');
+        return (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="h-7 w-7 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+            onClick={() => {
+              addAttachment({
+                name,
+                type: tool || 'resource',
+                data: row
+              });
+              toast.success(`Attached ${name} to chat`);
+            }}
+            title="Add to Chat"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+          </Button>
+        );
+      },
+      size: 40
+    });
 
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return baseCols;
+  }, [data, tool, namespace, handleStopPortForward, addAttachment]);
+
   const table = useReactTable({
     data,
     columns,
     columnResizeMode: "onChange",
     getRowId: (row, index) => {
-       const id = String(row.name || row.podName || (row.metadata as any)?.name || index);
-       return id;
+      const id = String(row.name || row.podName || (row.metadata as { name?: string })?.name || index);
+      return id;
     },
     getCoreRowModel: getCoreRowModel(),
   });
+
+  if (data.length === 0) return null;
 
   return (
     <div className="rounded-md border bg-white dark:bg-zinc-900 overflow-hidden">
@@ -485,18 +536,17 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                     <div
                       onMouseDown={header.getResizeHandler()}
                       onTouchStart={header.getResizeHandler()}
-                      className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-zinc-400 bg-zinc-200 opacity-0 group-hover:opacity-100 ${
-                        header.column.getIsResizing()
-                          ? "bg-blue-500 opacity-100 w-1"
-                          : ""
-                      }`}
-                      // Hack to show resizer always on hover of header, need 'group' on TableHead
+                      className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-zinc-400 bg-zinc-200 opacity-0 group-hover:opacity-100 ${header.column.getIsResizing()
+                        ? "bg-blue-500 opacity-100 w-1"
+                        : ""
+                        }`}
+                    // Hack to show resizer always on hover of header, need 'group' on TableHead
                     />
                   </TableHead>
                 ))}
@@ -572,7 +622,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPfTarget(null)}>Cancel</Button>
-            <Button 
+            <Button
               onClick={() => handlePortForward({
                 ...pfTarget,
                 containerPort: parseInt(pfPorts.remote),
@@ -590,7 +640,9 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
   );
 }
 
-function ResourceCard({ item }: { item: Record<string, unknown> }) {
+function ResourceCard({ item, tool }: { item: Record<string, unknown>, tool?: string }) {
+  const { addAttachment } = useChat();
+
   // Helper to render object properties
   const renderValue = (val: unknown) => {
     if (typeof val === "object" && val !== null) {
@@ -601,31 +653,46 @@ function ResourceCard({ item }: { item: Record<string, unknown> }) {
   };
 
   // Determine what to show based on tool type or generic fallback
-  // @ts-expect-error
-    const name = String(item.name || item.podName || (item.metadata as unknown)?.name || "Unknown");
+  const name = String(item.name || item.podName || (item.metadata as { name?: string })?.name || "Unknown");
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="bg-zinc-50 dark:bg-zinc-800/50 pb-3">
+      <CardHeader className="bg-zinc-50 dark:bg-zinc-800/50 pb-3 flex flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base font-medium truncate" title={name}>
           {name}
         </CardTitle>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="h-8 w-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+          onClick={() => {
+            addAttachment({
+              name,
+              type: tool || 'resource',
+              data: item
+            });
+            toast.success(`Attached ${name} to chat`);
+          }}
+          title="Add to Chat"
+        >
+          <MessageSquarePlus className="h-4 w-4" />
+        </Button>
       </CardHeader>
       <CardContent className="pt-4 text-sm">
         <div className="grid gap-2">
-           {Object.entries(item).slice(0, 6).map(([key, value]) => {
-             if (key === "name" || key === "podName" || key === "metadata") return null;
-             if (typeof value === 'object' && value !== null && Object.keys(value as object).length === 0) return null;
+          {Object.entries(item).slice(0, 6).map(([key, value]) => {
+            if (key === "name" || key === "podName" || key === "metadata") return null;
+            if (typeof value === 'object' && value !== null && Object.keys(value as object).length === 0) return null;
 
-             return (
-               <div key={key} className="flex justify-between border-b pb-1 last:border-0 last:pb-0">
-                 <span className="font-medium text-zinc-500 capitalize px-1">{key}</span>
-                 <span className="text-right truncate max-w-[150px]" title={String(value)}>
-                   {renderValue(value)}
-                 </span>
-               </div>
-             );
-           })}
+            return (
+              <div key={key} className="flex justify-between border-b pb-1 last:border-0 last:pb-0">
+                <span className="font-medium text-zinc-500 capitalize px-1">{key}</span>
+                <span className="text-right truncate max-w-[150px]" title={String(value)}>
+                  {renderValue(value)}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

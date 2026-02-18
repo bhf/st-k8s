@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import DashboardContent from '../DashboardContent'
 import { RefreshProvider } from '@/lib/refresh-context'
+import { ChatProvider } from '@/components/ChatContext'
 import React from 'react'
 
 // Mock fetch global
@@ -10,9 +11,9 @@ global.fetch = mockFetch
 
 // Mock ResizeObserver which might be used by some layout components
 global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe() { }
+  unobserve() { }
+  disconnect() { }
 }
 
 describe('DashboardContent', () => {
@@ -42,7 +43,9 @@ describe('DashboardContent', () => {
   const renderWithProvider = (ui: React.ReactElement) => {
     return render(
       <RefreshProvider>
-        {ui}
+        <ChatProvider>
+          {ui}
+        </ChatProvider>
       </RefreshProvider>
     )
   }
