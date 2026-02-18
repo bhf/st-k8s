@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToolType } from "./Sidebar";
 import { Grid, List, Download, Zap, XCircle, MessageSquarePlus } from "lucide-react";
+import { MetricsDashboard } from "@/components/MetricsCharts";
 import { useChat } from "@/components/ChatContext";
 import { RefreshSelector } from "@/components/RefreshSelector";
 import { useRefresh } from "@/lib/refresh-context";
@@ -124,9 +125,13 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
         "roles": "k8s-roles",
         "rolebindings": "k8s-rolebindings",
         "port-forwards": "k8s-port-forward",
+        "metrics": "k8s-metrics-pods", // Default to pods for metrics tool if namespace selected
       };
 
-      const endpoint = endpointMap[tool];
+      let endpoint = endpointMap[tool];
+      if (tool === "metrics" && (!namespace || namespace === "all")) {
+        endpoint = "k8s-metrics-nodes";
+      }
       const url = new URL(`/api/tools/${endpoint}`, window.location.origin);
       if (namespace) {
         url.searchParams.set("namespace", namespace);
@@ -289,7 +294,12 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
 
       {!loading && !error && data.length > 0 && (
         <>
-          {viewMode === "grid" ? (
+          {tool === "metrics" ? (
+            <MetricsDashboard
+              nodes={((!namespace || namespace === "all") ? data : []) as any}
+              pods={(namespace && namespace !== "all" ? data : []) as any}
+            />
+          ) : viewMode === "grid" ? (
             <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
               {data.map((item, i) => (
                 <ResourceCard key={i} item={item} tool={tool} />
