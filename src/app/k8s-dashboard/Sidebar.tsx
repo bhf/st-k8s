@@ -42,16 +42,8 @@ export type ToolType =
   | "port-forwards";
 
 interface SidebarProps {
-  contexts: {name: string, isCurrent: boolean}[];
-  selectedContext: string;
-  onSelectContext: (ctx: string) => void;
-  namespaces: string[];
-  selectedNamespace: string;
-  onSelectNamespace: (ns: string) => void;
   selectedTool: ToolType;
   onSelectTool: (tool: ToolType) => void;
-  isLoadingNamespaces: boolean;
-  isLoadingContexts: boolean;
 }
 
 const TOOLS: { id: ToolType; label: string; icon: React.ReactNode }[] = [
@@ -76,16 +68,8 @@ const TOOLS: { id: ToolType; label: string; icon: React.ReactNode }[] = [
 ];
 
 export default function Sidebar({
-  contexts,
-  selectedContext,
-  onSelectContext,
-  namespaces,
-  selectedNamespace,
-  onSelectNamespace,
   selectedTool,
   onSelectTool,
-  isLoadingNamespaces,
-  isLoadingContexts
 }: SidebarProps) {
   return (
     <aside className="hidden md:flex md:w-64 bg-zinc-50 dark:bg-zinc-900 border-r flex-col h-full">
@@ -104,52 +88,6 @@ export default function Sidebar({
           </span>
         </div>
         <ModeToggle />
-      </div>
-
-      <div className="p-4 border-b space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="context-select" className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-            Context
-          </label>
-          <select
-            id="context-select"
-            className="w-full p-2 rounded-md border text-sm bg-white dark:bg-black"
-            value={selectedContext}
-            onChange={(e) => onSelectContext(e.target.value)}
-            disabled={isLoadingContexts}
-          >
-            {isLoadingContexts ? (
-              <option>Loading contexts...</option>
-            ) : (
-              contexts.map(ctx => (
-                <option key={ctx.name} value={ctx.name}>
-                  {ctx.name}
-                </option>
-              ))
-            )}
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="namespace-select" className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-            Namespace
-          </label>
-          <select
-            id="namespace-select"
-            className="w-full p-2 rounded-md border text-sm bg-white dark:bg-black"
-            value={selectedNamespace}
-            onChange={(e) => onSelectNamespace(e.target.value)}
-            disabled={isLoadingNamespaces}
-          >
-            {isLoadingNamespaces ? (
-              <option value={selectedNamespace}>Loading namespaces...</option>
-            ) : (
-              namespaces.map(ns => (
-                <option key={ns} value={ns}>{ns}</option>
-              ))
-            )}
-          </select>
-        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">

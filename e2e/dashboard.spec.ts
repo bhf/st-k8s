@@ -92,12 +92,13 @@ test.describe('K8s Dashboard Functionality', () => {
     await page.goto('/k8s-dashboard');
 
     // Select the other context
-    const contextSelect = page.getByLabel('Context');
-    await contextSelect.selectOption('prod-cluster');
+    const contextTrigger = page.getByLabel('Context');
+    await contextTrigger.click();
+    await page.getByRole('option', { name: 'prod-cluster' }).click();
 
     // Wait for namespaces for the new context
-    const namespaceSelect = page.getByLabel('Namespace');
-    await expect(namespaceSelect).toContainText('prod-ns');
+    const namespaceTrigger = page.getByLabel('Namespace');
+    await expect(namespaceTrigger).toContainText('prod-ns');
     
     // Check if the data from the new context is displayed
     await expect(page.getByRole('cell', { name: 'prod-pod' })).toBeVisible({ timeout: 10000 });
