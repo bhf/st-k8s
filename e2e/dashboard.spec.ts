@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('K8s Dashboard Functionality', () => { 
+test.describe('K8s Dashboard Functionality', () => {
   test.beforeEach(async ({ page }) => {
     // Mock general K8s metadata needed for the dashboard to initialize
     await page.route('*/**/api/tools/k8s-contexts*', async route => {
       await route.fulfill({ json: { data: [{ name: 'default', isCurrent: true }] } });
     });
-    
+
     await page.route('*/**/api/tools/k8s-namespaces*', async route => {
       await route.fulfill({ json: { namespaces: ['default'] } });
     });
@@ -29,7 +29,7 @@ test.describe('K8s Dashboard Functionality', () => {
           },
           {
             name: 'test-pod-2',
-            namespace: 'default', 
+            namespace: 'default',
             status: 'Pending',
             node: 'node-2'
           }
@@ -42,21 +42,21 @@ test.describe('K8s Dashboard Functionality', () => {
 
     // Wait for the data to be rendered
     // Use a longer timeout or wait for the cell specifically
-    const podCell = page.getByRole('cell', { name: 'test-pod-1' });
+    const podCell = page.getByRole('cell', { name: 'test-pod-1', exact: true });
     await expect(podCell).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('cell', { name: 'Running' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Running', exact: true })).toBeVisible();
   });
 
   test('should allow switching between contexts', async ({ page }) => {
     // Additional mock for a different context
     await page.route('*/**/api/tools/k8s-contexts*', async route => {
-      await route.fulfill({ 
-        json: { 
+      await route.fulfill({
+        json: {
           data: [
             { name: 'default', isCurrent: true },
             { name: 'prod-cluster', isCurrent: false }
-          ] 
-        } 
+          ]
+        }
       });
     });
 
@@ -70,21 +70,21 @@ test.describe('K8s Dashboard Functionality', () => {
       const ctx = url.searchParams.get('context');
 
       if (ctx === 'prod-cluster' && ns === 'prod-ns') {
-        await route.fulfill({ 
-          json: { 
-            data: [{ name: 'prod-pod', namespace: 'prod-ns', status: 'Running', node: 'prod-node' }] 
-          } 
+        await route.fulfill({
+          json: {
+            data: [{ name: 'prod-pod', namespace: 'prod-ns', status: 'Running', node: 'prod-node' }]
+          }
         });
       } else if (ctx === 'prod-cluster' && ns === 'default') {
         // Handle the intermediate state when context has changed but namespace hasn't yet
         await route.fulfill({ json: { data: [] } });
       } else {
-        await route.fulfill({ 
-          json: { 
+        await route.fulfill({
+          json: {
             data: [
               { name: 'test-pod-1', namespace: 'default', status: 'Running', node: 'node-1' }
-            ] 
-          } 
+            ]
+          }
         });
       }
     });
@@ -99,8 +99,8 @@ test.describe('K8s Dashboard Functionality', () => {
     // Wait for namespaces for the new context
     const namespaceTrigger = page.getByLabel('Namespace');
     await expect(namespaceTrigger).toContainText('prod-ns');
-    
+
     // Check if the data from the new context is displayed
-    await expect(page.getByRole('cell', { name: 'prod-pod' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('cell', { name: 'prod-pod', exact: true })).toBeVisible({ timeout: 10000 });
   });
 });
