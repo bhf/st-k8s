@@ -677,6 +677,119 @@
         }
       }
     },
+    "/api/tools/k8s-metrics-status": {
+      "get": {
+        "summary": "Check if Kubernetes Metrics Server is available",
+        "operationId": "getMetricsStatus",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ContextParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metrics availability status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "available": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-metrics-nodes": {
+      "get": {
+        "summary": "Get resource usage metrics for cluster nodes",
+        "operationId": "getNodeMetrics",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ContextParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Node metrics list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/K8sNodeMetrics"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/k8s-metrics-pods": {
+      "get": {
+        "summary": "Get resource usage metrics for pods in a namespace",
+        "operationId": "getPodMetrics",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NamespaceParam"
+          },
+          {
+            "$ref": "#/components/parameters/ContextParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pod metrics list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/K8sPodMetrics"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tools/k8s-port-forward": {
       "get": {
         "summary": "List active port forwards",
@@ -902,6 +1015,66 @@
           },
           "isCurrent": {
             "type": "boolean"
+          }
+        }
+      },
+      "K8sNodeMetrics": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "cpu": {
+            "type": "string"
+          },
+          "memory": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "window": {
+            "type": "string"
+          }
+        }
+      },
+      "K8sPodMetrics": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "cpu": {
+            "type": "string"
+          },
+          "memory": {
+            "type": "string"
+          },
+          "containers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "window": {
+            "type": "string"
           }
         }
       },

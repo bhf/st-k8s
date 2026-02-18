@@ -11,7 +11,7 @@
 View and chat to your Kubernetes cluster.
 
 
-Features a dashboard (with a K9s inspired dark theme and keyboard navigation), REST API, port forwarding management, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview). 
+Features a dashboard (with a K9s inspired dark theme and keyboard navigation), REST API, port forwarding management, resource monitoring, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview). 
 Integrates with VSCode and Copilot.
 
 ![img.png](docs/chat_1.png)
@@ -45,12 +45,22 @@ Manage Kubernetes port forwarding sessions directly from the dashboard or throug
 
 ![alt text](docs/portfwd.png)
 
+## Resource Monitoring
+
+Monitor CPU and memory usage for Nodes and Pods directly in the dashboard using interactive charts.
+
+- **Real-time Data**: Fetches live metrics from the Kubernetes Metrics Server.
+- **Node Metrics**: View cluster-wide resource utilization across all nodes.
+- **Pod Metrics**: Inspect resource consumption for individual pods in any namespace.
+- **Visual Charts**: Interactive Recharts-based visualizations for easier performance analysis.
+
 ## Table of Contents
 
 - [ST-K8s](#st-k8s)
   - [Keyboard Navigation](#keyboard-navigation)
   - [Log Viewer](#log-viewer)
   - [Port Forwarding](#port-forwarding)
+  - [Resource Monitoring](#resource-monitoring)
   - [Table of Contents](#table-of-contents)
   - [How to Run](#how-to-run)
     - [Using the `st-k8s` CLI](#using-the-st-k8s-cli)
@@ -168,6 +178,8 @@ Exposes read-only Kubernetes operations as tools:
 - `list_port_forwards`
 - `start_port_forward`
 - `stop_port_forward`
+- `get_node_metrics`
+- `get_pod_metrics`
 
 [Back to Top](#top)
 
