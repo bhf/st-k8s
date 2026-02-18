@@ -43,6 +43,8 @@ Manage Kubernetes port forwarding sessions directly from the dashboard or throug
 - **Service Mapping**: Automatically resolves Service targets to active Pods.
 - **Agentic Control**: Start or stop forwards using natural language through the Copilot integration or MCP server.
 
+![alt text](docs/portfwd.png)
+
 ## Table of Contents
 
 - [ST-K8s](#st-k8s)
