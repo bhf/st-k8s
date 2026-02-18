@@ -23,7 +23,8 @@ import {
   Cpu,
   Clock,
   Play,
-  Lock
+  Lock,
+  Zap
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -56,6 +57,7 @@ const COMMANDS: {
   { cmd: "serviceaccounts", alias: ["sa"], tool: "serviceaccounts", label: "ServiceAccounts", icon: <Lock className="w-4 h-4" /> },
   { cmd: "roles", alias: ["role"], tool: "roles", label: "Roles", icon: <Lock className="w-4 h-4" /> },
   { cmd: "rolebindings", alias: ["rb"], tool: "rolebindings", label: "RoleBindings", icon: <Lock className="w-4 h-4" /> },
+  { cmd: "portforwards", alias: ["pf"], tool: "port-forwards", label: "Port Forwards", icon: <Zap className="w-4 h-4" /> },
 ];
 
 export default function CommandPalette({ open, onOpenChange, onSelectTool }: CommandPaletteProps) {

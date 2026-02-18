@@ -4,9 +4,18 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToolType } from "./Sidebar";
-import { Grid, List, Download } from "lucide-react";
+import { Grid, List, Download, Zap, XCircle } from "lucide-react";
 import { RefreshSelector } from "@/components/RefreshSelector";
 import { useRefresh } from "@/lib/refresh-context";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -112,6 +121,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
         "serviceaccounts": "k8s-serviceaccounts",
         "roles": "k8s-roles",
         "rolebindings": "k8s-rolebindings",
+        "port-forwards": "k8s-port-forward",
       };
 
       const endpoint = endpointMap[tool];
@@ -269,7 +279,52 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
 }
 
 function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown>[], tool?: ToolType, namespace?: string }) {
+  const { refresh } = useRefresh();
+  const [pfTarget, setPfTarget] = useState<{podName?: string, serviceName?: string} | null>(null);
+  const [pfPorts, setPfPorts] = useState({ remote: "8080", local: "8080", address: "127.0.0.1" });
+
   if (data.length === 0) return null;
+
+  const handlePortForward = async (params: { podName?: string, serviceName?: string, containerPort: number, localPort?: number, localAddress?: string }) => {
+    try {
+      const res = await fetch('/api/tools/k8s-port-forward', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          namespace,
+          ...params
+        })
+      });
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.error || res.statusText);
+      }
+      const json = await res.json();
+      toast.success(`Port forward started: localhost:${json.data.localPort} -> ${params.podName || params.serviceName}:${params.containerPort}`);
+      setPfTarget(null);
+      refresh();
+    } catch (err) {
+      toast.error(`Failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  const handleStopPortForward = async (id: string) => {
+    try {
+      const res = await fetch('/api/tools/k8s-port-forward', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.error || res.statusText);
+      }
+      toast.success("Port forward stopped");
+      refresh();
+    } catch (err) {
+      toast.error(`Failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
 
   // Determine columns from ALL items to handle sparse data
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -297,7 +352,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           if (Object.keys(val).length === 0) return "";
           return JSON.stringify(val);
         }
-        if (key === 'status') {
+        if (key === 'status' || key === 'phase') {
            const status = String(val);
            return (
              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
@@ -323,21 +378,84 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
            const podName = String(row.podName || '');
            const containerName = String(row.containerName || '');
            return (
-             <a 
-               href={`/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}`}
-               className="text-blue-500 hover:text-blue-400 text-xs font-semibold underline underline-offset-2"
-               target="_blank"
-             >
-               View Logs
-             </a>
+             <div className="flex gap-2 items-center">
+               <a 
+                 href={`/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}`}
+                 className="text-blue-500 hover:text-blue-400 text-[10px] font-semibold underline underline-offset-2"
+                 target="_blank"
+               >
+                 Logs
+               </a>
+               <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6 text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
+                onClick={() => {
+                  setPfTarget({ podName });
+                  setPfPorts({ remote: "8080", local: "8080", address: "127.0.0.1" });
+                }}
+                title="Port Forward"
+               >
+                 <Zap className="h-3 w-3" />
+               </Button>
+             </div>
            );
          },
          size: 100
        });
     }
 
+    if (tool === 'services' && namespace) {
+       baseCols.push({
+         id: 'actions',
+         header: 'Actions',
+         cell: (info) => {
+           const row = info.row.original;
+           const serviceName = String(row.name || '');
+           return (
+             <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6 text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
+              onClick={() => {
+                setPfTarget({ serviceName });
+                setPfPorts({ remote: "80", local: "80", address: "127.0.0.1" });
+              }}
+              title="Port Forward"
+             >
+               <Zap className="h-3 w-3" />
+             </Button>
+           );
+         },
+         size: 80
+       });
+    }
+
+    if (tool === 'port-forwards') {
+       baseCols.push({
+         id: 'actions',
+         header: 'Actions',
+         cell: (info) => {
+           const row = info.row.original;
+           const id = String(row.id || '');
+           return (
+             <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+              onClick={() => handleStopPortForward(id)}
+              title="Stop Forward"
+             >
+               <XCircle className="h-4 w-4" />
+             </Button>
+           );
+         },
+         size: 80
+       });
+    }
+
     return baseCols;
-  }, [data, tool, namespace]);
+  }, [data, tool, namespace, handlePortForward, handleStopPortForward]);
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
   const table = useReactTable({
@@ -408,6 +526,66 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
             opacity: 1;
         }
       `}</style>
+
+      <Dialog open={!!pfTarget} onOpenChange={(open) => !open && setPfTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Port Forwarding</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="remote-port" className="text-right text-xs font-semibold uppercase text-zinc-500">
+                Remote Port
+              </label>
+              <Input
+                id="remote-port"
+                className="col-span-3 h-8"
+                value={pfPorts.remote}
+                onChange={(e) => setPfPorts({ ...pfPorts, remote: e.target.value, local: e.target.value })}
+                placeholder="e.g. 8080"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="local-port" className="text-right text-xs font-semibold uppercase text-zinc-500">
+                Local Port
+              </label>
+              <Input
+                id="local-port"
+                className="col-span-3 h-8"
+                value={pfPorts.local}
+                onChange={(e) => setPfPorts({ ...pfPorts, local: e.target.value })}
+                placeholder="Random if empty"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="local-address" className="text-right text-xs font-semibold uppercase text-zinc-500">
+                Local Address
+              </label>
+              <Input
+                id="local-address"
+                className="col-span-3 h-8"
+                value={pfPorts.address}
+                onChange={(e) => setPfPorts({ ...pfPorts, address: e.target.value })}
+                placeholder="e.g. 127.0.0.1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPfTarget(null)}>Cancel</Button>
+            <Button 
+              onClick={() => handlePortForward({
+                ...pfTarget,
+                containerPort: parseInt(pfPorts.remote),
+                localPort: pfPorts.local ? parseInt(pfPorts.local) : undefined,
+                localAddress: pfPorts.address || "127.0.0.1"
+              })}
+              disabled={!pfPorts.remote}
+            >
+              Start Forwarding
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

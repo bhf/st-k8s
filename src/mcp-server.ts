@@ -22,7 +22,11 @@ import {
   getRoles,
   getRoleBindings,
   getPodLogs,
-  getContexts
+  getContexts,
+  startPortForward,
+  stopPortForward,
+  listPortForwards,
+  findPodForService
 } from "./lib/k8s"; // Using relative path to ensure resolution without extra alias config if needed
 
 const server = new Server(
@@ -292,6 +296,42 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["podName"],
         },
       },
+      {
+        name: "start_port_forward",
+        description: "Initiate port forwarding to a Pod or Service",
+        inputSchema: {
+          type: "object",
+          properties: {
+            namespace: { type: "string", description: "Kubernetes namespace (default: default)" },
+            podName: { type: "string", description: "Name of the pod (optional, if serviceName is provided)" },
+            serviceName: { type: "string", description: "Name of the service (optional, if podName is provided)" },
+            containerPort: { type: "number", description: "Target container port" },
+            localPort: { type: "number", description: "Local port to listen on (optional, choice by system if omitted)" },
+            localAddress: { type: "string", description: "Local address to bind to (default: 127.0.0.1)" },
+            context: { type: "string", description: "Kubernetes context name (optional)" },
+          },
+          required: ["containerPort"],
+        },
+      },
+      {
+        name: "stop_port_forward",
+        description: "Terminate an active port forwarding session",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "Unique ID of the port forward session" },
+          },
+          required: ["id"],
+        },
+      },
+      {
+        name: "list_port_forwards",
+        description: "List all active port forwarding sessions",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
     ],
   };
 });
@@ -470,6 +510,63 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const logs = await getPodLogs(namespace || "default", podName, containerName, tailLines, sinceSeconds, context);
         return {
           content: [{ type: "text", text: logs }],
+        };
+      }
+
+      case "start_port_forward": {
+        const parsed = z.object({
+          namespace: z.string().optional(),
+          podName: z.string().optional(),
+          serviceName: z.string().optional(),
+          containerPort: z.number(),
+          localPort: z.number().optional(),
+          localAddress: z.string().optional(),
+          context: z.string().optional(),
+        }).safeParse(args);
+
+        if (!parsed.success) {
+          throw new Error("Invalid arguments for start_port_forward");
+        }
+
+        const { namespace, podName, serviceName, containerPort, localPort, localAddress, context } = parsed.data;
+        let targetPod = podName;
+        if (serviceName && !podName) {
+          targetPod = await findPodForService(namespace || "default", serviceName, context) || undefined;
+          if (!targetPod) {
+            throw new Error(`No pods found for service ${serviceName}`);
+          }
+        }
+        
+        if (!targetPod) {
+          throw new Error("Either podName or serviceName must be provided");
+        }
+
+        const forward = await startPortForward(namespace || "default", targetPod, containerPort, localPort, localAddress, context);
+        return {
+          content: [{ type: "text", text: JSON.stringify(forward, null, 2) }],
+        };
+      }
+
+      case "stop_port_forward": {
+        const parsed = z.object({
+          id: z.string(),
+        }).safeParse(args);
+
+        if (!parsed.success) {
+          throw new Error("Invalid arguments for stop_port_forward");
+        }
+
+        const { id } = parsed.data;
+        const success = await stopPortForward(id);
+        return {
+          content: [{ type: "text", text: JSON.stringify({ success }, null, 2) }],
+        };
+      }
+
+      case "list_port_forwards": {
+        const forwards = listPortForwards();
+        return {
+          content: [{ type: "text", text: JSON.stringify(forwards, null, 2) }],
         };
       }
 

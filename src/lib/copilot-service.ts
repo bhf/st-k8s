@@ -20,12 +20,16 @@ import {
   getRoles,
   getRoleBindings,
   getPodLogs,
-  getContexts
+  getContexts,
+  startPortForward,
+  stopPortForward,
+  listPortForwards,
+  findPodForService
 } from "./k8s";
 
 // Define tools
 const listContextsTool = defineTool("list_contexts", {
-  description: "List all Kubernetes contexts in the kubeconfig",
+  description: "List all available Kubernetes contexts from kubeconfig",
   parameters: z.object({}),
   handler: async () => {
     const contexts = await getContexts();
@@ -247,6 +251,53 @@ const listRoleBindingsTool = defineTool("list_rolebindings", {
     }
 });
 
+const startPortForwardTool = defineTool("start_port_forward", {
+    description: "Initiate port forwarding to a Pod or Service",
+    parameters: z.object({
+        namespace: z.string().optional().describe("Kubernetes namespace (default: default)"),
+        podName: z.string().optional().describe("Name of the pod (optional, if serviceName is provided)"),
+        serviceName: z.string().optional().describe("Name of the service (optional, if podName is provided)"),
+        containerPort: z.number().describe("Target container port"),
+        localPort: z.number().optional().describe("Local port to listen on (optional)"),
+        localAddress: z.string().optional().describe("Local address to bind to (default: 127.0.0.1)"),
+        context: z.string().optional().describe("Kubernetes context (optional)"),
+    }),
+    handler: async ({ namespace, podName, serviceName, containerPort, localPort, localAddress, context }) => {
+        let targetPod = podName;
+        if (serviceName && !podName) {
+            targetPod = await findPodForService(namespace || "default", serviceName, context) || undefined;
+            if (!targetPod) {
+                return `Error: No pods found for service ${serviceName}`;
+            }
+        }
+        if (!targetPod) {
+            return "Error: Either podName or serviceName must be provided";
+        }
+        const forward = await startPortForward(namespace || "default", targetPod, containerPort, localPort, localAddress, context);
+        return JSON.stringify(forward);
+    }
+});
+
+const stopPortForwardTool = defineTool("stop_port_forward", {
+    description: "Terminate an active port forwarding session",
+    parameters: z.object({
+        id: z.string().describe("Unique ID of the port forward session"),
+    }),
+    handler: async ({ id }) => {
+        const success = await stopPortForward(id);
+        return JSON.stringify({ success });
+    }
+});
+
+const listPortForwardsTool = defineTool("list_port_forwards", {
+    description: "List all active port forwarding sessions",
+    parameters: z.object({}),
+    handler: async () => {
+        const forwards = listPortForwards();
+        return JSON.stringify(forwards);
+    }
+});
+
 const getPodLogsTool = defineTool("get_pod_logs", {
     description: "Get logs for a specific pod and container",
     parameters: z.object({
@@ -265,7 +316,7 @@ const getPodLogsTool = defineTool("get_pod_logs", {
 
 // Singleton client/session management
 // Note: In serverless environment, this might be re-initialized.
-// Ideally, for a robust app, we'd persist session state or use a persistent server.
+// Ideally, for a robust app, we-d persist session state or use a persistent server.
 // For this local dashboard, this global variable approach might work if next dev is used.
 let client: CopilotClient | null = null;
 type CopilotSession = Awaited<ReturnType<CopilotClient["createSession"]>>;
@@ -320,7 +371,10 @@ export async function getSession(model: string = "gpt-4o") {
         listServiceAccountsTool,
         listRolesTool,
         listRoleBindingsTool,
-        getPodLogsTool
+        getPodLogsTool,
+        startPortForwardTool,
+        stopPortForwardTool,
+        listPortForwardsTool
     ]
   });
   currentModel = model;
@@ -363,4 +417,3 @@ export async function getModels() {
       return [];
   }
 }
-

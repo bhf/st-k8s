@@ -15,7 +15,8 @@ import {
   FileText,
   Clock,
   Play,
-  Lock
+  Lock,
+  Zap
 } from "lucide-react";
 import Image from "next/image";
 import {ModeToggle} from "@/components/ui/mode-toggle";
@@ -37,7 +38,8 @@ export type ToolType =
   | "cronjobs"
   | "serviceaccounts"
   | "roles"
-  | "rolebindings";
+  | "rolebindings"
+  | "port-forwards";
 
 interface SidebarProps {
   contexts: {name: string, isCurrent: boolean}[];
@@ -70,6 +72,7 @@ const TOOLS: { id: ToolType; label: string; icon: React.ReactNode }[] = [
   { id: "serviceaccounts", label: "ServiceAccounts", icon: <Lock className="w-4 h-4" /> },
   { id: "roles", label: "Roles", icon: <Lock className="w-4 h-4" /> },
   { id: "rolebindings", label: "RoleBindings", icon: <Lock className="w-4 h-4" /> },
+  { id: "port-forwards", label: "Port Forwards", icon: <Zap className="w-4 h-4" /> },
 ];
 
 export default function Sidebar({
