@@ -314,27 +314,78 @@ const getPodLogsTool = defineTool("get_pod_logs", {
     }
 });
 
+const SYSTEM_PROMPT = `
+You are an expert Kubernetes assistant for the ST-K8s dashboard. 
+Your primary goal is to help users understand, monitor, and troubleshoot their Kubernetes clusters.
+
+SECURITY GUARDRAILS:
+- You operate in a STRICTLY READ-ONLY environment.
+- You must NOT attempt to create, delete, or modify any Kubernetes resources (Pods, Deployments, Services, etc.).
+- If a user asks you to perform a mutative operation, politely explain that you are restricted to read-only actions for security reasons.
+- You can list resources, get logs, view configurations, and provide analysis based on the retrieved data.
+- Sensitive operational tools like port forwarding are excluded from your default capabilities.
+
+GUIDELINES:
+- Be concise and technical.
+- Provide YAML snippets or CLI commands for illustrative purposes when helpful, but always remind the user they must execute them manually if they intend to make changes.
+- Use the provided tools to fetch real-time data from the cluster.
+`;
+
+// Define tool lists by category
+const READ_ONLY_TOOLS = [
+    listContextsTool,
+    listNamespacesTool,
+    listPodsTool,
+    listDeploymentsTool,
+    listServicesTool,
+    listDaemonSetsTool,
+    listReplicaSetsTool,
+    listStatefulSetsTool,
+    listIngressesTool,
+    listEndpointsTool,
+    listEventsTool,
+    listPVCsTool,
+    listNodesTool,
+    listConfigMapsTool,
+    listJobsTool,
+    listCronJobsTool,
+    listServiceAccountsTool,
+    listRolesTool,
+    listRoleBindingsTool,
+    getPodLogsTool,
+];
+
+const OPERATIONAL_TOOLS = [
+    startPortForwardTool,
+    stopPortForwardTool,
+    listPortForwardsTool
+];
+
 // Singleton client/session management
-// Note: In serverless environment, this might be re-initialized.
-// Ideally, for a robust app, we-d persist session state or use a persistent server.
-// For this local dashboard, this global variable approach might work if next dev is used.
 let client: CopilotClient | null = null;
 type CopilotSession = Awaited<ReturnType<CopilotClient["createSession"]>>;
 let session: CopilotSession | null = null;
 let currentModel: string | null = null;
+let currentToolsHash: string | null = null;
 
-export async function getSession(model: string = "gpt-4o") {
-    console.log(`[CopilotService] getSession called with model: ${model}`);
-    console.log(`[CopilotService] Current active model: ${currentModel}`);
+function getToolsHash(tools: any[]) {
+    return tools.map(t => t.name).sort().join(",");
+}
 
-    if (session && currentModel === model) {
-        console.log(`[CopilotService] Reusing existing session for model: ${model}`);
+export async function getSession(model: string = "gpt-4o", options: { readOnly?: boolean } = { readOnly: true }) {
+    const readOnly = options.readOnly !== false;
+    const tools = !readOnly ? [...READ_ONLY_TOOLS, ...OPERATIONAL_TOOLS] : READ_ONLY_TOOLS;
+    const toolsHash = getToolsHash(tools) + (readOnly ? "-ro" : "-rw");
+
+    console.log(`[CopilotService] getSession called with model: ${model}, readOnly: ${readOnly}`);
+
+    if (session && currentModel === model && currentToolsHash === toolsHash) {
+        console.log(`[CopilotService] Reusing existing session`);
         return session;
     }
 
-    // If we have an existing session but need a different model, destroy the old one
     if (session) {
-        console.log(`[CopilotService] Destroying old session (model: ${currentModel}) to switch to ${model}`);
+        console.log(`[CopilotService] Destroying old session to re-configure`);
         try {
             await session.destroy();
         } catch (err) {
@@ -343,48 +394,40 @@ export async function getSession(model: string = "gpt-4o") {
         session = null;
     }
 
-    console.log(`[CopilotService] Creating NEW session for model: ${model}`);
-
     if (!client) {
         client = new CopilotClient({ logLevel: "info" });
     }
 
-    session = await client.createSession({
+    const sessionConfig: any = {
         model,
-        tools: [
-            listContextsTool,
-            listNamespacesTool,
-            listPodsTool,
-            listDeploymentsTool,
-            listServicesTool,
-            listDaemonSetsTool,
-            listReplicaSetsTool,
-            listStatefulSetsTool,
-            listIngressesTool,
-            listEndpointsTool,
-            listEventsTool,
-            listPVCsTool,
-            listNodesTool,
-            listConfigMapsTool,
-            listJobsTool,
-            listCronJobsTool,
-            listServiceAccountsTool,
-            listRolesTool,
-            listRoleBindingsTool,
-            getPodLogsTool,
-            startPortForwardTool,
-            stopPortForwardTool,
-            listPortForwardsTool
-        ]
-    });
+        tools,
+    };
+
+    if (readOnly) {
+        sessionConfig.systemMessage = {
+            mode: "append",
+            content: SYSTEM_PROMPT
+        };
+    }
+
+    session = await client.createSession(sessionConfig);
+
     currentModel = model;
-    console.log(`[CopilotService] Session created. currentModel updated to: ${currentModel}`);
+    currentToolsHash = toolsHash;
+    console.log(`[CopilotService] Session created with ${tools.length} tools and readOnly=${readOnly}`);
 
     return session;
 }
 
-export async function sendMessage(message: string, model: string = "gpt-4o", attachments?: { name: string, type: string, data: unknown }[]) {
-    const sess = await getSession(model);
+export function resetService() {
+    client = null;
+    session = null;
+    currentModel = null;
+    currentToolsHash = null;
+}
+
+export async function sendMessage(message: string, model: string = "gpt-4o", attachments?: { name: string, type: string, data: unknown }[], isReadOnly: boolean = true) {
+    const sess = await getSession(model, { readOnly: isReadOnly });
 
     let fullPrompt = message;
     if (attachments && attachments.length > 0) {

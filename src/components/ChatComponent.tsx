@@ -46,6 +46,7 @@ export default function ChatComponent({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(true);
 
   const { attachedResources, removeAttachment } = useChat();
 
@@ -107,6 +108,7 @@ export default function ChatComponent({
         body: JSON.stringify({
           message: userMsg.content,
           model,
+          isReadOnly,
           attachments: attachedResources.map(r => ({
             name: r.name,
             type: r.type,
@@ -159,9 +161,53 @@ export default function ChatComponent({
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-950 rounded-tl-xl">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="w-5 h-5 text-blue-400" />
-          <span className="font-semibold text-white text-lg">ST-K8s Chat</span>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-blue-400" />
+            <span className="font-semibold text-white text-lg">ST-K8s Chat</span>
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            <button
+              onClick={() => setIsReadOnly(!isReadOnly)}
+              className={`flex items-center gap-1 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border transition-colors ${isReadOnly
+                ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20"
+                : "text-amber-500 bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20"
+                }`}
+              title={isReadOnly ? "Click to enable write operations" : "Click to enforce read-only mode"}
+            >
+              <Boxes className="w-2.5 h-2.5" />
+              {isReadOnly ? "Read-only" : "Write Enabled"}
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors uppercase font-medium">
+                  View Capabilities
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="bg-zinc-800 border-zinc-700 text-zinc-200 z-[70] w-56 p-2">
+                <div className="text-[10px] uppercase font-bold text-zinc-500 mb-1.5 px-2">Active Tools</div>
+                <div className="space-y-1 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                  {[
+                    "list_namespaces", "list_pods", "list_deployments", "list_services",
+                    "list_nodes", "get_pod_logs", "list_events", "list_contexts",
+                    "list_configmaps", "list_jobs", "list_pvc",
+                    ...(isReadOnly ? [] : ["start_port_forward", "stop_port_forward", "list_port_forwards"])
+                  ].map(t => (
+                    <div key={t} className="text-[11px] px-2 py-1 rounded bg-zinc-900/50 border border-zinc-700/50 text-zinc-300">
+                      {t}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 pt-2 border-t border-zinc-700 px-2">
+                  <p className="text-[10px] text-zinc-400 italic">
+                    {isReadOnly
+                      ? "All tools are restricted to read-only cluster operations for security."
+                      : "Writing operations and sensitive tools are enabled."}
+                  </p>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <DropdownMenu>

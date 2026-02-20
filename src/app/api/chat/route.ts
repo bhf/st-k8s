@@ -3,12 +3,12 @@ import { sendMessage } from "@/lib/copilot-service";
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, model, attachments } = await req.json();
+    const { message, model, attachments, isReadOnly } = await req.json();
     if (!message) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    const response = await sendMessage(message, model, attachments);
+    const response = await sendMessage(message, model, attachments, isReadOnly);
     return NextResponse.json({ response });
   } catch (err: unknown) {
     console.error("Chat error:", err);
