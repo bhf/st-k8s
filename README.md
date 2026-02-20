@@ -5,7 +5,7 @@
 [![Build](https://github.com/bhf/st-k8s/actions/workflows/build.yml/badge.svg)](https://github.com/bhf/st-k8s/actions/workflows/build.yml)
 [![Test](https://github.com/bhf/st-k8s/actions/workflows/test.yml/badge.svg)](https://github.com/bhf/st-k8s/actions/workflows/test.yml)
 [![Playwright Tests](https://github.com/bhf/st-k8s/actions/workflows/playwright.yml/badge.svg)](https://github.com/bhf/st-k8s/actions/workflows/playwright.yml)
-![Coverage](https://img.shields.io/badge/Coverage-88.21%25-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/Coverage-80.33%25-brightgreen.svg)
 
 
 View and chat to your Kubernetes cluster.
@@ -14,7 +14,11 @@ View and chat to your Kubernetes cluster.
 Features a dashboard (with a K9s inspired dark theme and keyboard navigation), REST API, port forwarding management, resource monitoring, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview). 
 Integrates with VSCode and Copilot.
 
-![img.png](docs/chat_1.png)
+![Chat](docs/chat_1.png)
+![Context in chat](docs/chat_2.png)
+![Chat history](docs/chat_3.png)
+![alt text](image.png)
+
 
 Uses [Github Projects](https://github.com/users/bhf/projects/5) for planning and tracking.
 
@@ -27,13 +31,13 @@ The dashboard supports K9s-style keyboard navigation. Press `:` to open the comm
 - `:services` or `:svc`
 - ...and many more standard K8s shortcuts.
 
-![alt text](docs/commands.png)
+![Command Pallette](docs/commands.png)
 
 ## Log Viewer
 
 View, copy and download streaming logs.
 
-![alt text](docs/logview.png)
+![Log view](docs/logview.png)
 
 ## Port Forwarding
 
@@ -43,11 +47,11 @@ Manage Kubernetes port forwarding sessions directly from the dashboard or throug
 - **Service Mapping**: Automatically resolves Service targets to active Pods.
 - **Agentic Control**: Start or stop forwards using natural language through the Copilot integration or MCP server.
 
-![alt text](docs/portfwd.png)
+![Port Forwarding](docs/portfwd.png)
 
 ## Resource Monitoring
 
-Monitor CPU and memory usage for Nodes and Pods directly in the dashboard using interactive charts.
+Monitor CPU and memory usage for Nodes and Pods directly in the dashboard using interactive charts. Requires that your cluster has metrics server installed.
 
 - **Real-time Data**: Fetches live metrics from the Kubernetes Metrics Server.
 - **Node Metrics**: View cluster-wide resource utilization across all nodes.
@@ -77,6 +81,8 @@ Monitor CPU and memory usage for Nodes and Pods directly in the dashboard using 
   - [Security](#security)
 
 ## How to Run
+
+To use the browser based chat feature make sure you install the [Copilot CLI](https://github.com/github/copilot-cli).
 
 ```bash
 git clone https://github.com/bhf/st-k8s
@@ -128,7 +134,6 @@ This project uses [Playwright](https://playwright.dev/) for End-to-End testing.
 npm run test:e2e
 ```
 
-To use the browser based chat feature make sure you install the [Copilot CLI](https://github.com/github/copilot-cli).
 
 [Back to Top](#top)
 
