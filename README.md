@@ -17,7 +17,6 @@ Integrates with VSCode and Copilot.
 ![Chat](docs/chat_1.png)
 ![Context in chat](docs/chat_2.png)
 ![Chat history](docs/chat_3.png)
-![alt text](image.png)
 
 
 Uses [Github Projects](https://github.com/users/bhf/projects/5) for planning and tracking.
