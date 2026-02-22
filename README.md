@@ -8,7 +8,7 @@
 ![Coverage](https://img.shields.io/badge/Coverage-80.33%25-brightgreen.svg)
 
 
-View and chat to your Kubernetes cluster.
+View and chat to your Kubernetes cluster and container log files.
 
 ```bash
 brew tap bhf/st-k8s
