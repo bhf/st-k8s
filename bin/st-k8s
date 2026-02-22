@@ -45,6 +45,27 @@ if (!existsSync(path.join(root, '.next'))) {
 // Prefer standalone server if present
 if (existsSync(standaloneServer)) {
   console.log('Starting standalone server...');
+
+  // Standalone server needs public and static files copied to serve them
+  const standalonePublic = path.join(root, '.next', 'standalone', 'public');
+  const standaloneStatic = path.join(root, '.next', 'standalone', '.next', 'static');
+  if (!existsSync(standalonePublic)) {
+    const fs = require('fs');
+    if (fs.cpSync) {
+      fs.cpSync(path.join(root, 'public'), standalonePublic, { recursive: true });
+      fs.cpSync(path.join(root, '.next', 'static'), standaloneStatic, { recursive: true });
+    } else {
+      run('cp', ['-r', path.join(root, 'public'), standalonePublic]);
+      run('cp', ['-r', path.join(root, '.next', 'static'), standaloneStatic]);
+    }
+  }
+
+  // Inject package version for standalone server (normally provided by npm start)
+  if (!process.env.npm_package_version) {
+    const pkg = require(path.join(root, 'package.json'));
+    process.env.npm_package_version = pkg.version;
+  }
+
   run('node', [standaloneServer]);
 } else {
   console.log('Starting Next.js production server (`npm run start`)...');
