@@ -81,6 +81,18 @@ Monitor CPU and memory usage for Nodes and Pods directly in the dashboard using 
 
 ## How to Run
 
+### Using Homebrew (macOS/Linux)
+
+The easiest way to install and run `st-k8s` is via Homebrew:
+
+```bash
+brew tap bhf/st-k8s
+brew install st-k8s
+st-k8s
+```
+
+### From Source
+
 To use the browser based chat feature make sure you install the [Copilot CLI](https://github.com/github/copilot-cli).
 
 ```bash
