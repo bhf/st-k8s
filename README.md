@@ -10,6 +10,12 @@
 
 View and chat to your Kubernetes cluster.
 
+```bash
+brew tap bhf/st-k8s
+brew install st-k8s
+st-k8s
+```
+
 
 Features a dashboard (with a K9s inspired dark theme and keyboard navigation), REST API, port forwarding management, resource monitoring, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview). 
 Integrates with VSCode and Copilot.
