@@ -51,12 +51,18 @@ export default function Footer({
 }: FooterProps) {
   const [projectPath, setProjectPath] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [versionInfo, setVersionInfo] = useState<{ version: string; latestVersion: string | null; updateAvailable: boolean } | null>(null);
 
   useEffect(() => {
     const url = new URL("/api/config", window.location.origin);
     fetch(url.toString())
       .then((res) => res.json())
       .then((data) => setProjectPath(data.projectPath || ""))
+      .catch(console.error);
+
+    fetch("/api/version")
+      .then((res) => res.json())
+      .then((data) => setVersionInfo(data))
       .catch(console.error);
   }, []);
 
@@ -143,6 +149,26 @@ export default function Footer({
       </div>
 
       <div className="flex items-center gap-4 shrink-0 px-2 ml-auto">
+        {versionInfo && (
+          <>
+            {versionInfo.updateAvailable ? (
+              <a
+                href="https://github.com/bhf/st-k8s/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 font-mono text-[9px] text-amber-500 hover:text-amber-400 transition-colors bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20"
+                title={`Update available: v${versionInfo.latestVersion}`}
+              >
+                ↑ v{versionInfo.latestVersion}
+              </a>
+            ) : (
+              <div className="font-mono text-[9px] text-zinc-500" title="Current version">
+                v{versionInfo.version}
+              </div>
+            )}
+            <div className="w-px h-3 bg-zinc-800 mx-1" />
+          </>
+        )}
         <div className="flex items-center gap-1.5 font-mono text-[9px] text-zinc-500 mr-2">
           © 2026 <a href="https://sanjeev.pages.dev/" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300 transition-colors">StayTuned</a>
         </div>

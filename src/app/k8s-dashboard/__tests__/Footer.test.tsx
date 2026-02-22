@@ -41,4 +41,36 @@ describe('Footer', () => {
     render(<Footer {...defaultProps} isLoadingNamespaces={true} />)
     expect(screen.getByRole('combobox', { name: /namespace/i })).toBeDisabled()
   })
+
+  it('renders current version', async () => {
+    const mockFetch = vi.fn().mockImplementation((url) => {
+      if (url === '/api/version') {
+        return Promise.resolve({
+          json: () => Promise.resolve({ version: '1.0.0', latestVersion: '1.0.0', updateAvailable: false })
+        })
+      }
+      return Promise.resolve({ json: () => Promise.resolve({}) })
+    })
+    global.fetch = mockFetch
+
+    render(<Footer {...defaultProps} />)
+    expect(await screen.findByText('v1.0.0')).toBeDefined()
+    global.fetch = vi.restoreAllMocks as any
+  })
+
+  it('renders update available badge', async () => {
+    const mockFetch = vi.fn().mockImplementation((url) => {
+      if (url === '/api/version') {
+        return Promise.resolve({
+          json: () => Promise.resolve({ version: '1.0.0', latestVersion: '1.1.0', updateAvailable: true })
+        })
+      }
+      return Promise.resolve({ json: () => Promise.resolve({}) })
+    })
+    global.fetch = mockFetch
+
+    render(<Footer {...defaultProps} />)
+    expect(await screen.findByText('↑ v1.1.0')).toBeDefined()
+    global.fetch = vi.restoreAllMocks as any
+  })
 })
