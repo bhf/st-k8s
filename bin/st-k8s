@@ -22,7 +22,7 @@ function printBanner() {
 }
 
 function run(cmd, args) {
-  const res = spawnSync(cmd, args, { stdio: 'inherit' });
+  const res = spawnSync(cmd, args, { stdio: 'inherit', cwd: root });
   if (res.error) {
     console.error(res.error);
     process.exit(1);
@@ -30,7 +30,7 @@ function run(cmd, args) {
   if (res.status !== 0) process.exit(res.status || 1);
 }
 
-const root = process.cwd();
+const root = path.join(__dirname, '..');
 const standaloneServer = path.join(root, '.next', 'standalone', 'server.js');
 
 // Print banner on launch

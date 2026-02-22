@@ -79,8 +79,9 @@ jobs:
             def install
               system "npm", "ci", "--ignore-scripts"
               system "npm", "run", "build"
-              bin.install "bin/st-k8s"
-              prefix.install_metafiles
+              libexec.install Dir["*"]
+              libexec.install ".next"
+              bin.install_symlink libexec/"bin/st-k8s"
             end
           
             test do
