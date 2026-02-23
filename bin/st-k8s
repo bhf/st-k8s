@@ -30,11 +30,34 @@ function run(cmd, args) {
   if (res.status !== 0) process.exit(res.status || 1);
 }
 
+const args = process.argv.slice(2);
+
+if (args.includes('--help')) {
+  console.log(`
+Usage: st-k8s [options]
+
+Options:
+  --mcp      Launch the MCP server instead of the Web UI
+  --help     Display this help message
+  `);
+  process.exit(0);
+}
+
+const isMcp = args.includes('--mcp');
 const root = path.join(__dirname, '..');
 const standaloneServer = path.join(root, '.next', 'standalone', 'server.js');
 
-// Print banner on launch
-printBanner();
+if (!isMcp) {
+  // Print banner on launch only for the Web UI
+  printBanner();
+}
+
+if (isMcp) {
+  // Launch the MCP server
+  // Avoid printing any logs as they corrupt the MCP stdio protocol
+  run('npm', ['run', 'mcp', '--silent']);
+  process.exit(0);
+}
 
 // Build if needed
 if (!existsSync(path.join(root, '.next'))) {
