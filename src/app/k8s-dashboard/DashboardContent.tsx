@@ -4,13 +4,14 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToolType } from "./Sidebar";
-import { Grid, List, Download, Zap, XCircle, MessageSquarePlus } from "lucide-react";
+import { Grid, List, Download, Zap, XCircle, MessageSquarePlus, Terminal } from "lucide-react";
 import { MetricsDashboard } from "@/components/MetricsCharts";
 import { useChat } from "@/components/ChatContext";
 import { JsonRenderer } from "@/components/JsonRenderer";
 import { RefreshSelector } from "@/components/RefreshSelector";
 import { useRefresh } from "@/lib/refresh-context";
 import { toast } from "sonner";
+import { KubectlCheatSheet } from "@/components/KubectlCheatSheet";
 import {
   Dialog,
   DialogContent,
@@ -303,7 +304,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
           ) : viewMode === "grid" ? (
             <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
               {data.map((item, i) => (
-                <ResourceCard key={i} item={item} tool={tool} />
+                <ResourceCard key={i} item={item} tool={tool} namespace={namespace} />
               ))}
             </div>
           ) : (
@@ -320,6 +321,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
   const { addAttachment } = useChat();
   const [pfTarget, setPfTarget] = useState<{ podName?: string, serviceName?: string } | null>(null);
   const [pfPorts, setPfPorts] = useState({ remote: "8080", local: "8080", address: "127.0.0.1" });
+  const [cheatSheetTarget, setCheatSheetTarget] = useState<{ name: string, type: string } | null>(null);
 
   const handlePortForward = useCallback(async (params: { podName?: string, serviceName?: string, containerPort: number, localPort?: number, localAddress?: string }) => {
     try {
@@ -453,13 +455,12 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
               size="icon"
               className="h-6 w-6 text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
               onClick={() => {
-                setPfTarget({ serviceName });
-                setPfPorts({ remote: "80", local: "80", address: "127.0.0.1" });
+                setCheatSheetTarget({ name: serviceName, type: 'services' });
               }}
-              title="Port Forward"
-              aria-label={`Port forward for service ${serviceName}`}
+              title="Kubectl Cheat Sheet"
+              aria-label={`Show kubectl cheat sheet for ${serviceName}`}
             >
-              <Zap className="h-3 w-3" />
+              <Terminal className="h-3 w-3" />
             </Button>
           );
         },
@@ -490,6 +491,32 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
         size: 80
       });
     }
+
+    // Kubectl Cheat Sheet action
+    baseCols.push({
+      id: 'cheat-sheet',
+      header: '',
+      cell: (info) => {
+        const row = info.row.original;
+        const name = String(row.name || row.podName || (row.metadata as { name?: string })?.name || '');
+        if (!name || tool === 'port-forwards' || tool === 'metrics') return null;
+        return (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="h-7 w-7 text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 hover:bg-zinc-500/10"
+            onClick={() => {
+              setCheatSheetTarget({ name, type: tool || 'resource' });
+            }}
+            title="Kubectl Cheat Sheet"
+            aria-label={`Show kubectl cheat sheet for ${name}`}
+          >
+            <Terminal className="h-4 w-4" />
+          </Button>
+        );
+      },
+      size: 40
+    });
 
     // Add to Chat action
     baseCols.push({
@@ -658,12 +685,23 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {cheatSheetTarget && (
+        <KubectlCheatSheet
+          open={!!cheatSheetTarget}
+          onOpenChange={(open) => !open && setCheatSheetTarget(null)}
+          resourceName={cheatSheetTarget.name}
+          resourceType={cheatSheetTarget.type}
+          namespace={namespace}
+        />
+      )}
     </div>
   );
 }
 
-function ResourceCard({ item, tool }: { item: Record<string, unknown>, tool?: string }) {
+function ResourceCard({ item, tool, namespace }: { item: Record<string, unknown>, tool?: string, namespace?: string }) {
   const { addAttachment } = useChat();
+  const [showCheatSheet, setShowCheatSheet] = useState(false);
 
   // Helper to render object properties
   const renderValue = (val: unknown, key?: string) => {
@@ -683,23 +721,35 @@ function ResourceCard({ item, tool }: { item: Record<string, unknown>, tool?: st
         <CardTitle className="text-base font-medium truncate" title={name}>
           {name}
         </CardTitle>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="h-8 w-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
-          onClick={() => {
-            addAttachment({
-              name,
-              type: tool || 'resource',
-              data: item
-            });
-            toast.success(`Attached ${name} to chat`);
-          }}
-          title="Add to Chat"
-          aria-label={`Add resource ${name} to chat`}
-        >
-          <MessageSquarePlus className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="h-8 w-8 text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 hover:bg-zinc-500/10"
+            onClick={() => setShowCheatSheet(true)}
+            title="Kubectl Cheat Sheet"
+            aria-label={`Show kubectl cheat sheet for ${name}`}
+          >
+            <Terminal className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="h-8 w-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+            onClick={() => {
+              addAttachment({
+                name,
+                type: tool || 'resource',
+                data: item
+              });
+              toast.success(`Attached ${name} to chat`);
+            }}
+            title="Add to Chat"
+            aria-label={`Add resource ${name} to chat`}
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="pt-4 text-sm">
         <div className="grid gap-2">
@@ -718,6 +768,15 @@ function ResourceCard({ item, tool }: { item: Record<string, unknown>, tool?: st
           })}
         </div>
       </CardContent>
+      {showCheatSheet && (
+        <KubectlCheatSheet
+          open={showCheatSheet}
+          onOpenChange={setShowCheatSheet}
+          resourceName={name}
+          resourceType={tool || 'resource'}
+          namespace={namespace}
+        />
+      )}
     </Card>
   );
 }
