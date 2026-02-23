@@ -54,7 +54,7 @@ function DeploymentsTable({ data }: { data: Deployment[] }) {
 function DeploymentsFetcher({ namespace }: { namespace: string }) {
   const { autoRefresh, interval, triggerRefresh, setLastUpdated } = useRefresh();
   const { data, error } = useSWR(
-    \`/api/tools/k8s-deployments?namespace=\${namespace}&t=\${triggerRefresh}\`, 
+    `/api/tools/k8s-deployments?namespace=${namespace}&t=${triggerRefresh}`, 
     fetcher, 
     {
       suspense: true,

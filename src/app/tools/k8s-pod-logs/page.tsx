@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, Suspense, useCallback } from "react";
+import { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -38,17 +38,17 @@ function LogViewer() {
     setLogs(["Fetching logs..."]);
 
     try {
-      const res = await fetch(`/api/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}&tailLines=${tailLines}${sinceSeconds > 0 ? \`&sinceSeconds=\${sinceSeconds}\` : ''}`);
+      const res = await fetch(`/api/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}&tailLines=${tailLines}${sinceSeconds > 0 ? `&sinceSeconds=${sinceSeconds}` : ''}`);
       const data = await res.json();
       if (data.data) {
         setLogs(data.data.split("\n"));
         toast.success("Logs refreshed");
       } else if (data.error) {
-        setLogs([\`Error: \${data.error}\`]);
-        toast.error(\`Error: \${data.error}\`);
+        setLogs([`Error: ${data.error}`]);
+        toast.error(`Error: ${data.error}`);
       }
     } catch (err) {
-      setLogs([\`Fetch failed: \${err}\`]);
+      setLogs([`Fetch failed: ${err}`]);
       toast.error("Fetch failed");
     }
   }, [podName, containerName, namespace, tailLines, sinceSeconds]);
@@ -69,7 +69,7 @@ function LogViewer() {
 
     try {
       const res = await fetch(
-        \`/api/tools/k8s-pod-logs?namespace=\${namespace}&podName=\${podName}&containerName=\${containerName}&stream=true&tailLines=\${tailLines}\${sinceSeconds > 0 ? \`&sinceSeconds=\${sinceSeconds}\` : ''}\`,
+        `/api/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}&stream=true&tailLines=${tailLines}${sinceSeconds > 0 ? `&sinceSeconds=${sinceSeconds}` : ''}`,
         { signal: abortControllerRef.current.signal }
       );
 
@@ -88,7 +88,7 @@ function LogViewer() {
       if (err instanceof Error && err.name === 'AbortError') {
         console.log('Stream aborted');
       } else {
-        setLogs(prev => [...prev, \`Streaming error: \${err}\`]);
+        setLogs(prev => [...prev, `Streaming error: ${err}`]);
       }
     } finally {
       setIsStreaming(false);
@@ -119,7 +119,7 @@ function LogViewer() {
     const a = document.createElement("a");
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     a.href = url;
-    a.download = \`\${podName}-\${containerName}-\${timestamp}.log\`;
+    a.download = `${podName}-${containerName}-${timestamp}.log`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -145,7 +145,7 @@ function LogViewer() {
   const addToChat = () => {
     if (!selection) return;
     addAttachment({
-      name: \`Log snippet from \${podName}\`,
+      name: `Log snippet from ${podName}`,
       type: 'log-snippet',
       data: {
         pod: podName,
@@ -252,7 +252,7 @@ function LogViewer() {
           </div>
           <div className="flex-1" />
           <div className="flex items-center gap-2">
-             <div className={\`w-2 h-2 rounded-full \${isStreaming ? 'bg-green-500 animate-pulse' : 'bg-zinc-700'}\`} />
+             <div className={`w-2 h-2 rounded-full ${isStreaming ? 'bg-green-500 animate-pulse' : 'bg-zinc-700'}`} />
              <span className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest">
                {isStreaming ? 'Live' : 'Static'}
              </span>

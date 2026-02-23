@@ -57,7 +57,7 @@ export function RefreshSelector() {
               aria-label="Auto refresh settings"
             >
               <Timer className="h-3 w-3" />
-              {autoRefresh ? \`\${interval}s\` : "OFF"}
+              {autoRefresh ? `${interval}s` : "OFF"}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[180px] font-sans">
@@ -76,9 +76,9 @@ export function RefreshSelector() {
               <DropdownMenuItem
                 key={s}
                 onClick={() => setRefreshInterval(s)}
-                className={\`text-xs \${interval === s ? "bg-accent" : ""}\`}
+                className={`text-xs ${interval === s ? "bg-accent" : ""}`}
               >
-                {s >= 60 ? \`\${s / 60} minute\${s > 60 ? 's' : ''}\` : \`\${s} seconds\`}
+                {s >= 60 ? `${s / 60} minute${s > 60 ? 's' : ''}` : `${s} seconds`}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
