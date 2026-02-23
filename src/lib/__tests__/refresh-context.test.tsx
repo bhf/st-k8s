@@ -21,10 +21,7 @@ const TestComponent = () => {
 describe('RefreshProvider', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        // Mock localStorage
-        const store: Record<string, string> = {};
-        vi.spyOn(Storage.prototype, 'getItem').mockImplementation((key) => store[key] || null);
-        vi.spyOn(Storage.prototype, 'setItem').mockImplementation((key, value) => { store[key] = value; });
+        localStorage.clear();
     });
 
     it('loads initial state from localStorage', () => {

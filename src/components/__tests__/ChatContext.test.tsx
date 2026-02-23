@@ -45,21 +45,16 @@ const TestComponent = () => {
 // Tests
 // ----------------------------------------------------------------
 describe('ChatProvider', () => {
-    let store: Record<string, string>;
-
     beforeEach(() => {
         vi.clearAllMocks();
-        store = {};
-        vi.spyOn(Storage.prototype, 'getItem').mockImplementation((key) => store[key] ?? null);
-        vi.spyOn(Storage.prototype, 'setItem').mockImplementation((key, value) => { store[key] = value; });
-        vi.spyOn(Storage.prototype, 'removeItem').mockImplementation((key) => { delete store[key]; });
+        localStorage.clear();
     });
 
     // ---- attachments (backwards-compatible) ----
 
     it('loads initial attachments from localStorage', () => {
         const initialData = [{ id: '1', name: 'saved-res', type: 'pod', data: {} }];
-        store['chat_attachments'] = JSON.stringify(initialData);
+        localStorage.setItem('chat_attachments', JSON.stringify(initialData));
 
         render(<ChatProvider><TestComponent /></ChatProvider>);
 
@@ -196,7 +191,7 @@ describe('ChatProvider', () => {
             messages: [{ role: 'user', content: 'hi' }],
             attachments: [],
         };
-        store['chat_sessions'] = JSON.stringify([session]);
+        localStorage.setItem('chat_sessions', JSON.stringify([session]));
 
         render(<ChatProvider><TestComponent /></ChatProvider>);
 

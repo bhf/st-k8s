@@ -54,13 +54,18 @@ export default function Footer({
   const [versionInfo, setVersionInfo] = useState<{ version: string; latestVersion: string | null; updateAvailable: boolean } | null>(null);
 
   useEffect(() => {
-    const url = new URL("/api/config", window.location.origin);
-    fetch(url.toString())
+    // Helper to fetch with absolute URL for test environments
+    const safeFetch = (path: string) => {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+      return fetch(new URL(path, baseUrl).toString());
+    };
+
+    safeFetch("/api/config")
       .then((res) => res.json())
       .then((data) => setProjectPath(data.projectPath || ""))
       .catch(console.error);
 
-    fetch("/api/version")
+    safeFetch("/api/version")
       .then((res) => res.json())
       .then((data) => setVersionInfo(data))
       .catch(console.error);

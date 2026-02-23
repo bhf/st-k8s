@@ -7,6 +7,7 @@ import { ToolType } from "./Sidebar";
 import { Grid, List, Download, Zap, XCircle, MessageSquarePlus } from "lucide-react";
 import { MetricsDashboard } from "@/components/MetricsCharts";
 import { useChat } from "@/components/ChatContext";
+import { JsonRenderer } from "@/components/JsonRenderer";
 import { RefreshSelector } from "@/components/RefreshSelector";
 import { useRefresh } from "@/lib/refresh-context";
 import { toast } from "sonner";
@@ -384,7 +385,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
         const val = info.getValue();
         if (typeof val === "object" && val !== null) {
           if (Object.keys(val).length === 0) return "";
-          return JSON.stringify(val);
+          return <JsonRenderer value={val} label={key} />;
         }
         if (key === 'status' || key === 'phase') {
           const status = String(val);
@@ -572,16 +573,21 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           <TableBody>
             {table.getRowModel().rows.map((row) => (
               <TableRow key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className="truncate max-w-[200px]"
-                    title={String(cell.getValue())}
-                    style={{ width: cell.column.getSize() }}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+                {row.getVisibleCells().map((cell) => {
+                  const val = cell.getValue();
+                  const isObject = typeof val === "object" && val !== null;
+                  
+                  return (
+                    <TableCell
+                      key={cell.id}
+                      className={isObject ? "" : "truncate max-w-[200px]"}
+                      title={isObject ? undefined : String(val)}
+                      style={{ width: cell.column.getSize() }}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             ))}
           </TableBody>
@@ -660,10 +666,10 @@ function ResourceCard({ item, tool }: { item: Record<string, unknown>, tool?: st
   const { addAttachment } = useChat();
 
   // Helper to render object properties
-  const renderValue = (val: unknown) => {
+  const renderValue = (val: unknown, key?: string) => {
     if (typeof val === "object" && val !== null) {
       if (Object.keys(val).length === 0) return "";
-      return JSON.stringify(val);
+      return <JsonRenderer value={val} label={key} maxItems={1} />;
     }
     return String(val);
   };
@@ -704,8 +710,8 @@ function ResourceCard({ item, tool }: { item: Record<string, unknown>, tool?: st
             return (
               <div key={key} className="flex justify-between border-b pb-1 last:border-0 last:pb-0">
                 <span className="font-medium text-zinc-500 capitalize px-1">{key}</span>
-                <span className="text-right truncate max-w-[150px]" title={String(value)}>
-                  {renderValue(value)}
+                <span className="text-right truncate max-w-[150px]" title={typeof value === 'object' ? undefined : String(value)}>
+                  {renderValue(value, key)}
                 </span>
               </div>
             );

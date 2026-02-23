@@ -224,6 +224,8 @@ describe('k8s library', () => {
         memoryCapacity: '16Gi',
         arch: 'amd64',
         os: 'linux',
+        labels: { 'node-role.kubernetes.io/control-plane': '' },
+        conditions: [{ type: 'Ready', status: 'True' }],
         created: '2023-01-01T00:00:00Z'
       })
       expect(mocks.coreApi.listNode).toHaveBeenCalled()
@@ -272,6 +274,7 @@ describe('k8s library', () => {
         clusterIP: '10.0.0.1',
         ports: [{ port: 80 }],
         selector: { app: 'web' },
+        labels: {},
         created: '2023-01-01T00:00:00Z'
       })
       expect(mocks.coreApi.listNamespacedService).toHaveBeenCalledWith({ namespace: 'default' })
@@ -296,6 +299,7 @@ describe('k8s library', () => {
         current: 3,
         ready: 3,
         available: 3,
+        labels: {},
         created: '2023-01-01T00:00:00Z'
       })
       expect(mocks.appsApi.listNamespacedDaemonSet).toHaveBeenCalledWith({ namespace: 'default' })
@@ -320,6 +324,7 @@ describe('k8s library', () => {
         replicas: 3,
         ready: 3,
         available: 3,
+        labels: {},
         created: '2023-01-01T00:00:00Z'
       })
       expect(mocks.appsApi.listNamespacedReplicaSet).toHaveBeenCalledWith({ namespace: 'default' })
@@ -343,6 +348,7 @@ describe('k8s library', () => {
         name: 'sts-1',
         replicas: 2,
         ready: 2,
+        labels: {},
         created: '2023-01-01T00:00:00Z'
       })
       expect(mocks.appsApi.listNamespacedStatefulSet).toHaveBeenCalledWith({ namespace: 'default' })
