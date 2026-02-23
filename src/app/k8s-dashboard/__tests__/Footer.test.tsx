@@ -70,6 +70,30 @@ describe('Footer', () => {
     expect(await screen.findByText('v1.0.0')).toBeDefined()
   })
 
+  it('triggers update check when clicking version label', async () => {
+    const mockFetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/api/version')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({ version: '1.0.0', latestVersion: '1.0.0', updateAvailable: false })
+        })
+      }
+      return Promise.resolve({ json: () => Promise.resolve({}) })
+    })
+    global.fetch = mockFetch
+
+    const { fireEvent } = await import('@testing-library/react')
+
+    render(<Footer {...defaultProps} />)
+    const versionLabel = await screen.findByText('v1.0.0')
+    
+    // Reset call count to check only the click trigger
+    mockFetch.mockClear()
+    fireEvent.click(versionLabel)
+
+    // Should fetch version again
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/version'))
+  })
+
   it('renders update available badge', async () => {
     const mockFetch = vi.fn().mockImplementation((url) => {
       if (url.includes('/api/version')) {
@@ -83,5 +107,26 @@ describe('Footer', () => {
 
     render(<Footer {...defaultProps} />)
     expect(await screen.findByText('↑ v1.1.0')).toBeDefined()
+  })
+
+  it('opens update modal when clicking the update badge', async () => {
+    const mockFetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/api/version')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({ version: '1.0.0', latestVersion: '1.1.0', updateAvailable: true })
+        })
+      }
+      return Promise.resolve({ json: () => Promise.resolve({}) })
+    })
+    global.fetch = mockFetch
+
+    const { fireEvent } = await import('@testing-library/react')
+
+    render(<Footer {...defaultProps} />)
+    const badge = await screen.findByText('↑ v1.1.0')
+    fireEvent.click(badge)
+
+    expect(await screen.findByText(/Update Available: v1.1.0/i)).toBeDefined()
+    expect(screen.getByText(/brew update && brew upgrade st-k8s/i)).toBeDefined()
   })
 })

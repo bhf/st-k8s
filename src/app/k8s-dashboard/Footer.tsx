@@ -26,7 +26,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { UpdateModal } from "@/components/UpdateModal";
+import { toast } from "sonner";
+import { RefreshCcw } from "lucide-react";
 
 interface FooterProps {
   contexts: { name: string; isCurrent: boolean }[];
@@ -51,7 +54,39 @@ export default function Footer({
 }: FooterProps) {
   const [projectPath, setProjectPath] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
   const [versionInfo, setVersionInfo] = useState<{ version: string; latestVersion: string | null; updateAvailable: boolean } | null>(null);
+
+  const checkUpdates = useCallback(async (manual = false) => {
+    setIsCheckingUpdates(true);
+    if (manual) {
+      toast.info("Checking for updates...");
+    }
+
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+      const res = await fetch(new URL("/api/version", baseUrl).toString());
+      const data = await res.json();
+      setVersionInfo(data);
+      
+      if (manual) {
+        if (data.updateAvailable) {
+          toast.success(`Update available: v${data.latestVersion}`);
+          setIsUpdateModalOpen(true);
+        } else {
+          toast.success("You are on the latest version");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to check for updates", err);
+      if (manual) {
+        toast.error("Failed to check for updates");
+      }
+    } finally {
+      setIsCheckingUpdates(false);
+    }
+  }, []);
 
   useEffect(() => {
     // Helper to fetch with absolute URL for test environments
@@ -65,11 +100,8 @@ export default function Footer({
       .then((data) => setProjectPath(data.projectPath || ""))
       .catch(console.error);
 
-    safeFetch("/api/version")
-      .then((res) => res.json())
-      .then((data) => setVersionInfo(data))
-      .catch(console.error);
-  }, []);
+    checkUpdates();
+  }, [checkUpdates]);
 
   const mcpConfig = {
     servers: {
@@ -157,19 +189,26 @@ export default function Footer({
         {versionInfo && (
           <>
             {versionInfo.updateAvailable ? (
-              <a
-                href="https://github.com/bhf/st-k8s/releases"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => setIsUpdateModalOpen(true)}
                 className="flex items-center gap-1 font-mono text-[9px] text-amber-500 hover:text-amber-400 transition-colors bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20"
                 title={`Update available: v${versionInfo.latestVersion}`}
               >
                 ↑ v{versionInfo.latestVersion}
-              </a>
+              </button>
             ) : (
-              <div className="font-mono text-[9px] text-zinc-500" title="Current version">
+              <button
+                onClick={() => checkUpdates(true)}
+                disabled={isCheckingUpdates}
+                className={cn(
+                  "font-mono text-[9px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1.5",
+                  isCheckingUpdates && "opacity-70 cursor-not-allowed"
+                )}
+                title="Click to check for updates"
+              >
+                {isCheckingUpdates && <RefreshCcw className="w-2.5 h-2.5 animate-spin" />}
                 v{versionInfo.version}
-              </div>
+              </button>
             )}
             <div className="w-px h-3 bg-zinc-800 mx-1" />
           </>
@@ -259,6 +298,12 @@ export default function Footer({
           </DialogContent>
         </Dialog>
       </div>
+
+      <UpdateModal
+        isOpen={isUpdateModalOpen}
+        onOpenChange={setIsUpdateModalOpen}
+        latestVersion={versionInfo?.latestVersion || ""}
+      />
     </footer>
   );
 }
