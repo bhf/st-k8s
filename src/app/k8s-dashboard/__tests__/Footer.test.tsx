@@ -1,6 +1,6 @@
 
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import Footer from '../Footer'
 
 describe('Footer', () => {
@@ -14,6 +14,19 @@ describe('Footer', () => {
     isLoadingNamespaces: false,
     isLoadingContexts: false
   }
+
+  beforeEach(() => {
+    // Provide a default mock for fetch to avoid errors in tests that don't mock it explicitly
+    global.fetch = vi.fn().mockImplementation(() => 
+      Promise.resolve({
+        json: () => Promise.resolve({})
+      })
+    )
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
 
   it('renders fixed text elements', () => {
     render(<Footer {...defaultProps} />)
@@ -44,7 +57,7 @@ describe('Footer', () => {
 
   it('renders current version', async () => {
     const mockFetch = vi.fn().mockImplementation((url) => {
-      if (url === '/api/version') {
+      if (url.includes('/api/version')) {
         return Promise.resolve({
           json: () => Promise.resolve({ version: '1.0.0', latestVersion: '1.0.0', updateAvailable: false })
         })
@@ -55,12 +68,11 @@ describe('Footer', () => {
 
     render(<Footer {...defaultProps} />)
     expect(await screen.findByText('v1.0.0')).toBeDefined()
-    global.fetch = vi.restoreAllMocks as any
   })
 
   it('renders update available badge', async () => {
     const mockFetch = vi.fn().mockImplementation((url) => {
-      if (url === '/api/version') {
+      if (url.includes('/api/version')) {
         return Promise.resolve({
           json: () => Promise.resolve({ version: '1.0.0', latestVersion: '1.1.0', updateAvailable: true })
         })
@@ -71,6 +83,5 @@ describe('Footer', () => {
 
     render(<Footer {...defaultProps} />)
     expect(await screen.findByText('↑ v1.1.0')).toBeDefined()
-    global.fetch = vi.restoreAllMocks as any
   })
 })

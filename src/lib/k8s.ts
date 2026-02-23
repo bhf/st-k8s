@@ -108,7 +108,9 @@ export async function getPods(namespace: string, context?: string) {
         cpuLimit: resources.limits?.cpu || "-",
         memoryRequest: resources.requests?.memory || "-",
         memoryLimit: resources.limits?.memory || "-",
-        status: pod.status?.phase
+        status: pod.status?.phase,
+        labels: pod.metadata?.labels || {},
+        nodeName: pod.spec?.nodeName,
       };
     })
   );
@@ -123,6 +125,8 @@ export async function getDeployments(namespace: string, context?: string) {
     readyReplicas: item.status?.readyReplicas || 0,
     updatedReplicas: item.status?.updatedReplicas || 0,
     availableReplicas: item.status?.availableReplicas || 0,
+    labels: item.metadata?.labels || {},
+    annotations: item.metadata?.annotations || {},
     created: item.metadata?.creationTimestamp,
   }));
 }
@@ -136,6 +140,7 @@ export async function getServices(namespace: string, context?: string) {
     clusterIP: item.spec?.clusterIP,
     ports: item.spec?.ports || [],
     selector: item.spec?.selector,
+    labels: item.metadata?.labels || {},
     created: item.metadata?.creationTimestamp,
   }));
 }
@@ -149,6 +154,7 @@ export async function getDaemonSets(namespace: string, context?: string) {
     current: item.status?.currentNumberScheduled || 0,
     ready: item.status?.numberReady || 0,
     available: item.status?.numberAvailable || 0,
+    labels: item.metadata?.labels || {},
     created: item.metadata?.creationTimestamp,
   }));
 }
@@ -161,6 +167,7 @@ export async function getReplicaSets(namespace: string, context?: string) {
     replicas: item.spec?.replicas || 0,
     ready: item.status?.readyReplicas || 0,
     available: item.status?.availableReplicas || 0,
+    labels: item.metadata?.labels || {},
     created: item.metadata?.creationTimestamp,
   }));
 }
@@ -172,6 +179,7 @@ export async function getStatefulSets(namespace: string, context?: string) {
     name: item.metadata?.name,
     replicas: item.spec?.replicas || 0,
     ready: item.status?.readyReplicas || 0,
+    labels: item.metadata?.labels || {},
     created: item.metadata?.creationTimestamp,
   }));
 }
@@ -253,6 +261,8 @@ export async function getNodes(context?: string) {
       memoryCapacity: node.status?.capacity?.memory,
       arch: node.status?.nodeInfo?.architecture,
       os: node.status?.nodeInfo?.operatingSystem,
+      labels: labels,
+      conditions: node.status?.conditions || [],
       created: node.metadata?.creationTimestamp,
     };
   });
