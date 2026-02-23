@@ -41,7 +41,7 @@ export function RefreshSelector() {
           variant="ghost"
           size="sm"
           onClick={refresh}
-          className="h-full w-8 p-0 rounded-none border-r hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          className="h-full w-8 p-0 rounded-none border-r hover:bg-zinc-800"
           title="Refresh Now"
           aria-label="Refresh now"
         >
@@ -53,7 +53,7 @@ export function RefreshSelector() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-full px-2 rounded-none gap-1 font-mono text-[10px] hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="h-full px-2 rounded-none gap-1 font-mono text-[10px] hover:bg-zinc-800"
               aria-label="Auto refresh settings"
             >
               <Timer className="h-3 w-3" />

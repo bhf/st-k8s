@@ -3,7 +3,6 @@
 import { useState } from "react";
 import useSWR from "swr";
 import Image from "next/image";
-import { ModeToggle } from "@/components/ui/mode-toggle";
 import { RefreshSelector } from "@/components/RefreshSelector";
 import { useRefresh } from "@/lib/refresh-context";
 
@@ -117,7 +116,7 @@ export default function K8sPodResourcesPage() {
   const [fetchKey, setFetchKey] = useState(0);
 
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-black font-sans">
+    <div className="flex flex-col min-h-screen bg-black font-sans">
       <header className="p-4 border-b flex items-center bg-black justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Image
@@ -134,13 +133,12 @@ export default function K8sPodResourcesPage() {
         </div>
         <div className="flex items-center gap-2">
           <RefreshSelector />
-          <ModeToggle />
         </div>
       </header>
 
       <main className="flex-1 p-8 flex flex-col items-center">
-        <div className="w-full max-w-5xl flex flex-col gap-8 p-8 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border dark:border-zinc-800">
-          <h1 className="text-3xl font-bold mb-2 text-black dark:text-white">K8s Pod Resource Requests & Limits</h1>
+        <div className="w-full max-w-5xl flex flex-col gap-8 p-8 bg-zinc-900 rounded-xl shadow-lg border border-zinc-800">
+          <h1 className="text-3xl font-bold mb-2 text-white">K8s Pod Resource Requests & Limits</h1>
           <form
             className="flex gap-4 items-end"
             onSubmit={e => {

@@ -99,12 +99,12 @@ export default function K8sDashboardPage() {
   }, [selectedContext]);
 
   return (
-    <div className="flex h-screen w-full bg-background dark:bg-background overflow-hidden relative">
+    <div className="flex h-screen w-full bg-background overflow-hidden relative">
         <Sidebar
           selectedTool={selectedTool}
           onSelectTool={setSelectedTool}
         />
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-zinc-50/50 dark:bg-zinc-900/50">
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-zinc-900/50">
           <main className="flex-1 min-h-0 overflow-hidden">
             <DashboardContent
               namespace={selectedNamespace}
