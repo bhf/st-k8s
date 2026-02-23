@@ -5,7 +5,7 @@
 [![Build](https://github.com/bhf/st-k8s/actions/workflows/build.yml/badge.svg)](https://github.com/bhf/st-k8s/actions/workflows/build.yml)
 [![Test](https://github.com/bhf/st-k8s/actions/workflows/test.yml/badge.svg)](https://github.com/bhf/st-k8s/actions/workflows/test.yml)
 [![Playwright Tests](https://github.com/bhf/st-k8s/actions/workflows/playwright.yml/badge.svg)](https://github.com/bhf/st-k8s/actions/workflows/playwright.yml)
-![Coverage](https://img.shields.io/badge/Coverage-80.33%25-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/Coverage-80.91%25-brightgreen.svg)
 
 
 View and chat to your Kubernetes cluster and container log files.
@@ -72,6 +72,8 @@ Monitor CPU and memory usage for Nodes and Pods directly in the dashboard using 
   - [Resource Monitoring](#resource-monitoring)
   - [Table of Contents](#table-of-contents)
   - [How to Run](#how-to-run)
+    - [Using Homebrew (macOS/Linux)](#using-homebrew-macoslinux)
+    - [From Source](#from-source)
     - [Using the `st-k8s` CLI](#using-the-st-k8s-cli)
     - [Running Tests](#running-tests)
     - [End-to-End Tests](#end-to-end-tests)

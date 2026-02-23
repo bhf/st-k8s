@@ -6,9 +6,9 @@ const CURRENT_VERSION = process.env.npm_package_version ?? "1.0.0";
 const GITHUB_RELEASES_URL =
     "https://api.github.com/repos/bhf/st-k8s/releases/latest";
 
-// Cache the upstream version check for 1 hour to avoid hammering the API
+// Cache the upstream version check for 10 seconds to avoid hammering the API
 let cachedLatest: { version: string; fetchedAt: number } | null = null;
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL_MS = 10 * 1000; // 10 seconds
 
 async function getLatestVersion(): Promise<string | null> {
     const now = Date.now();
@@ -19,8 +19,8 @@ async function getLatestVersion(): Promise<string | null> {
     try {
         const res = await fetch(GITHUB_RELEASES_URL, {
             headers: { Accept: "application/vnd.github+json" },
-            // next.js fetch cache — revalidate every hour
-            next: { revalidate: 3600 },
+            // next.js fetch cache — revalidate every 60 seconds
+            next: { revalidate: 60 },
         });
         if (!res.ok) return null;
         const data = await res.json();
