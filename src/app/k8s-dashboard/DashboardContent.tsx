@@ -280,8 +280,8 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
       )}
 
       {error && (
-        <Card className="border-red-200 bg-red-50 dark:bg-red-900/20" role="alert">
-          <CardContent className="pt-6 text-red-600 dark:text-red-400">
+        <Card className="border-red-900/20 bg-red-900/20" role="alert">
+          <CardContent className="pt-6 text-red-400">
             Error: {error}
           </CardContent>
         </Card>

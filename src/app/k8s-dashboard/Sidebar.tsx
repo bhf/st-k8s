@@ -19,7 +19,6 @@ import {
   Zap
 } from "lucide-react";
 import Image from "next/image";
-import { ModeToggle } from "@/components/ui/mode-toggle";
 import { useState, useEffect } from "react";
 
 export type ToolType =
@@ -89,7 +88,7 @@ export default function Sidebar({
   });
 
   return (
-    <aside className="hidden md:flex md:w-64 bg-zinc-50 dark:bg-zinc-900 border-r flex-col h-full">
+    <aside className="hidden md:flex md:w-64 bg-zinc-900 border-r flex-col h-full">
       <div className="p-4 border-b flex items-center bg-black justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <Image
@@ -104,7 +103,6 @@ export default function Sidebar({
             ~$ ST-K8s_
           </span>
         </div>
-        <ModeToggle />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">

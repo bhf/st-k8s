@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense, useCallback } from "react";
+import { useEffect, useState, useRef, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ModeToggle } from "@/components/ui/mode-toggle";
 import { toast } from "sonner";
 import { useChat } from "@/components/ChatContext";
 import { MessageSquarePlus } from "lucide-react";
@@ -39,17 +38,17 @@ function LogViewer() {
     setLogs(["Fetching logs..."]);
 
     try {
-      const res = await fetch(`/api/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}&tailLines=${tailLines}${sinceSeconds > 0 ? `&sinceSeconds=${sinceSeconds}` : ''}`);
+      const res = await fetch(`/api/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}&tailLines=${tailLines}${sinceSeconds > 0 ? \`&sinceSeconds=\${sinceSeconds}\` : ''}`);
       const data = await res.json();
       if (data.data) {
         setLogs(data.data.split("\n"));
         toast.success("Logs refreshed");
       } else if (data.error) {
-        setLogs([`Error: ${data.error}`]);
-        toast.error(`Error: ${data.error}`);
+        setLogs([\`Error: \${data.error}\`]);
+        toast.error(\`Error: \${data.error}\`);
       }
     } catch (err) {
-      setLogs([`Fetch failed: ${err}`]);
+      setLogs([\`Fetch failed: \${err}\`]);
       toast.error("Fetch failed");
     }
   }, [podName, containerName, namespace, tailLines, sinceSeconds]);
@@ -70,7 +69,7 @@ function LogViewer() {
 
     try {
       const res = await fetch(
-        `/api/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}&stream=true&tailLines=${tailLines}${sinceSeconds > 0 ? `&sinceSeconds=${sinceSeconds}` : ''}`,
+        \`/api/tools/k8s-pod-logs?namespace=\${namespace}&podName=\${podName}&containerName=\${containerName}&stream=true&tailLines=\${tailLines}\${sinceSeconds > 0 ? \`&sinceSeconds=\${sinceSeconds}\` : ''}\`,
         { signal: abortControllerRef.current.signal }
       );
 
@@ -89,7 +88,7 @@ function LogViewer() {
       if (err instanceof Error && err.name === 'AbortError') {
         console.log('Stream aborted');
       } else {
-        setLogs(prev => [...prev, `Streaming error: ${err}`]);
+        setLogs(prev => [...prev, \`Streaming error: \${err}\`]);
       }
     } finally {
       setIsStreaming(false);
@@ -120,7 +119,7 @@ function LogViewer() {
     const a = document.createElement("a");
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     a.href = url;
-    a.download = `${podName}-${containerName}-${timestamp}.log`;
+    a.download = \`\${podName}-\${containerName}-\${timestamp}.log\`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -146,7 +145,7 @@ function LogViewer() {
   const addToChat = () => {
     if (!selection) return;
     addAttachment({
-      name: `Log snippet from ${podName}`,
+      name: \`Log snippet from \${podName}\`,
       type: 'log-snippet',
       data: {
         pod: podName,
@@ -166,7 +165,7 @@ function LogViewer() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-zinc-50 dark:bg-black">
+    <div className="flex flex-col h-screen dark:bg-black">
       {/* Branded Header */}
       <header className="p-4 border-b flex items-center bg-black justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -182,15 +181,12 @@ function LogViewer() {
             ~$ ST-K8s_
           </span>
         </div>
-        <div className="flex items-center gap-4">
-          <ModeToggle />
-        </div>
       </header>
 
       <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 italic">
+            <h1 className="text-2xl font-bold text-zinc-100 italic">
               Logs: <span className="text-[#368dab] font-mono">{podName}</span>
             </h1>
             <p className="text-sm text-zinc-500 font-mono">
@@ -198,20 +194,45 @@ function LogViewer() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={copyToClipboard} variant="outline" size="sm">Copy</Button>
-            <Button onClick={downloadLogs} variant="outline" size="sm">Download</Button>
-            {!isStreaming ? (
-              <Button onClick={startStreaming} size="sm" className="bg-[#368dab] hover:bg-[#2d768f]">Stream</Button>
-            ) : (
-              <Button onClick={stopStreaming} variant="destructive" size="sm">Stop</Button>
-            )}
-            <Button onClick={fetchLogs} variant="secondary" size="sm">Refresh</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchLogs}
+              disabled={isStreaming}
+              className="h-8 border-zinc-700 hover:bg-zinc-800 text-zinc-300"
+            >
+              Refresh
+            </Button>
+            <Button
+              variant={isStreaming ? "destructive" : "default"}
+              size="sm"
+              onClick={isStreaming ? stopStreaming : startStreaming}
+              className="h-8 shadow-sm"
+            >
+              {isStreaming ? "Stop Stream" : "Stream Logs"}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={copyToClipboard}
+              className="h-8"
+            >
+              Copy
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadLogs}
+              className="h-8 border-zinc-700 hover:bg-zinc-800 text-zinc-300"
+            >
+              Download
+            </Button>
           </div>
         </div>
 
         <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2 px-4 rounded-md shrink-0 shadow-sm">
           <div className="flex items-center gap-2">
-            <label className="text-[10px] font-bold uppercase text-zinc-500 whitespace-nowrap">Tail Lines</label>
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Tail Lines:</span>
             <Input
               type="number"
               value={tailLines}
@@ -221,7 +242,7 @@ function LogViewer() {
           </div>
           <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700" />
           <div className="flex items-center gap-2">
-            <label className="text-[10px] font-bold uppercase text-zinc-500 whitespace-nowrap">Since (s)</label>
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Since (secs):</span>
             <Input
               type="number"
               value={sinceSeconds}
@@ -230,8 +251,11 @@ function LogViewer() {
             />
           </div>
           <div className="flex-1" />
-          <div className="text-[10px] text-zinc-400 italic">
-            Ready to inspect. Stream for live updates.
+          <div className="flex items-center gap-2">
+             <div className={\`w-2 h-2 rounded-full \${isStreaming ? 'bg-green-500 animate-pulse' : 'bg-zinc-700'}\`} />
+             <span className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest">
+               {isStreaming ? 'Live' : 'Static'}
+             </span>
           </div>
         </div>
 
@@ -240,28 +264,36 @@ function LogViewer() {
           onMouseUp={handleSelection}
           className="flex-1 bg-zinc-950 text-zinc-300 font-mono p-4 rounded-lg overflow-y-auto whitespace-pre-wrap text-xs border border-zinc-800 scrollbar-thin scrollbar-thumb-zinc-700 shadow-inner relative"
         >
-          {logs.map((line, i) => (
-            <div key={i} className="hover:bg-zinc-900/50 px-1 py-0.5 border-l-2 border-transparent hover:border-[#368dab] transition-colors leading-relaxed">
-              {line}
-            </div>
-          ))}
+          {logs.length === 0 ? (
+            <div className="text-zinc-600 italic">No logs found.</div>
+          ) : (
+            logs.map((line, i) => (
+              <div key={i} className="hover:bg-zinc-900/50 min-h-[1.2rem] px-1 transition-colors">
+                <span className="text-zinc-600 mr-3 select-none inline-block w-8 text-right">{i + 1}</span>
+                {line}
+              </div>
+            ))
+          )}
           <div ref={logEndRef} />
 
           {selection && (
             <div
-              className="fixed z-50 animate-in fade-in zoom-in duration-200"
               style={{
-                left: `${selection.x}px`,
-                top: `${selection.y}px`,
-                transform: 'translate(-50%, -100%)'
+                position: "fixed",
+                left: selection.x,
+                top: selection.y,
+                transform: "translate(-50%, -100%)",
+                zIndex: 100,
               }}
+              className="bg-zinc-800 border border-zinc-700 shadow-xl rounded-md p-1 flex gap-1 animate-in fade-in zoom-in duration-150"
             >
               <Button
                 size="sm"
+                variant="ghost"
                 onClick={addToChat}
-                className="bg-[#368dab] hover:bg-[#2d768f] text-white shadow-lg border border-white/10 flex items-center gap-2 h-8 px-3"
+                className="h-7 text-[10px] px-2 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
               >
-                <MessageSquarePlus className="h-4 w-4" />
+                <MessageSquarePlus className="w-3 h-3 mr-1" />
                 Add to Chat
               </Button>
             </div>

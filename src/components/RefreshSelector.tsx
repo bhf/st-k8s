@@ -41,7 +41,7 @@ export function RefreshSelector() {
           variant="ghost"
           size="sm"
           onClick={refresh}
-          className="h-full w-8 p-0 rounded-none border-r hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          className="h-full w-8 p-0 rounded-none border-r hover:bg-zinc-800"
           title="Refresh Now"
           aria-label="Refresh now"
         >
@@ -53,11 +53,11 @@ export function RefreshSelector() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-full px-2 rounded-none gap-1 font-mono text-[10px] hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="h-full px-2 rounded-none gap-1 font-mono text-[10px] hover:bg-zinc-800"
               aria-label="Auto refresh settings"
             >
               <Timer className="h-3 w-3" />
-              {autoRefresh ? `${interval}s` : "OFF"}
+              {autoRefresh ? \`\${interval}s\` : "OFF"}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[180px] font-sans">
@@ -76,9 +76,9 @@ export function RefreshSelector() {
               <DropdownMenuItem
                 key={s}
                 onClick={() => setRefreshInterval(s)}
-                className={`text-xs ${interval === s ? "bg-accent" : ""}`}
+                className={\`text-xs \${interval === s ? "bg-accent" : ""}\`}
               >
-                {s >= 60 ? `${s / 60} minute${s > 60 ? 's' : ''}` : `${s} seconds`}
+                {s >= 60 ? \`\${s / 60} minute\${s > 60 ? 's' : ''}\` : \`\${s} seconds\`}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

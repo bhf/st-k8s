@@ -3,7 +3,6 @@
 import { useState } from "react";
 import useSWR from "swr";
 import Image from "next/image";
-import { ModeToggle } from "@/components/ui/mode-toggle";
 import { RefreshSelector } from "@/components/RefreshSelector";
 import { useRefresh } from "@/lib/refresh-context";
 
@@ -47,17 +46,17 @@ function PodResourcesTable({ data, namespace }: { data: PodResource[], namespace
               <td className="px-4 py-2 text-zinc-600 dark:text-zinc-400">{row.memoryRequest}</td>
               <td className="px-4 py-2 text-zinc-600 dark:text-zinc-400">{row.memoryLimit}</td>
               <td className="px-4 py-2">
-                <span className={`px-2 py-1 rounded text-xs font-bold ${
+                <span className={\`px-2 py-1 rounded text-xs font-bold \${
                   row.status === 'Running' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                   row.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
                   'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                }`}>
+                }\`}>
                   {row.status}
                 </span>
               </td>
               <td className="px-4 py-2">
                 <a 
-                  href={`/tools/k8s-pod-logs?namespace=${namespace}&podName=${row.podName}&containerName=${row.containerName}`}
+                  href={\`/tools/k8s-pod-logs?namespace=\${namespace}&podName=\${row.podName}&containerName=\${row.containerName}\`}
                   className="text-blue-600 hover:underline dark:text-blue-400 text-sm font-semibold"
                 >
                   View Logs
@@ -75,7 +74,7 @@ function PodResourcesFetcher({ namespace }: { namespace: string }) {
   const { autoRefresh, interval, triggerRefresh, setLastUpdated } = useRefresh();
   
   const { data, error, isLoading } = useSWR(
-    `/api/tools/k8s-pod-resources?namespace=${namespace}&t=${triggerRefresh}`, 
+    \`/api/tools/k8s-pod-resources?namespace=\${namespace}&t=\${triggerRefresh}\`, 
     fetcher,
     {
       refreshInterval: autoRefresh ? interval * 1000 : 0,
@@ -117,7 +116,7 @@ export default function K8sPodResourcesPage() {
   const [fetchKey, setFetchKey] = useState(0);
 
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-black font-sans">
+    <div className="flex flex-col min-h-screen bg-black font-sans">
       <header className="p-4 border-b flex items-center bg-black justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Image
@@ -134,13 +133,12 @@ export default function K8sPodResourcesPage() {
         </div>
         <div className="flex items-center gap-2">
           <RefreshSelector />
-          <ModeToggle />
         </div>
       </header>
 
       <main className="flex-1 p-8 flex flex-col items-center">
-        <div className="w-full max-w-5xl flex flex-col gap-8 p-8 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border dark:border-zinc-800">
-          <h1 className="text-3xl font-bold mb-2 text-black dark:text-white">K8s Pod Resource Requests & Limits</h1>
+        <div className="w-full max-w-5xl flex flex-col gap-8 p-8 bg-zinc-900 rounded-xl shadow-lg border border-zinc-800">
+          <h1 className="text-3xl font-bold mb-2 text-white">K8s Pod Resource Requests & Limits</h1>
           <form
             className="flex gap-4 items-end"
             onSubmit={e => {
