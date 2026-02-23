@@ -1,0 +1,27 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+    authors:
+      - dependabot[bot]
+  categories:
+    - title: 🚀 Features
+      labels:
+        - enhancement
+        - feature
+        - feat
+    - title: 🐛 Bug Fixes
+      labels:
+        - bug
+        - fix
+    - title: 📖 Documentation
+      labels:
+        - documentation
+        - docs
+    - title: 📦 Dependencies
+      labels:
+        - dependencies
+    - title: 🛠 Maintenance
+      labels:
+        - maintenance
+        - chore

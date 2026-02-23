@@ -48,6 +48,7 @@ jobs:
           files: ${{ env.TARBALL_NAME }}
           draft: false
           prerelease: false
+          generate_release_notes: true
 
       - name: Update Homebrew tap formula
         env:
