@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToolType } from "./Sidebar";
@@ -12,6 +12,7 @@ import { RefreshSelector } from "@/components/RefreshSelector";
 import { useRefresh } from "@/lib/refresh-context";
 import { toast } from "sonner";
 import { KubectlCheatSheet } from "@/components/KubectlCheatSheet";
+import { isEqual } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -43,7 +44,9 @@ interface DashboardContentProps {
 
 export default function DashboardContent({ namespace, context, tool }: DashboardContentProps) {
   const [data, setData] = useState<Record<string, unknown>[]>([]);
+  const dataRef = useRef<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const { autoRefresh, interval, triggerRefresh, setLastUpdated } = useRefresh();
@@ -104,7 +107,12 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
   const fetchData = useCallback(async () => {
     if (!namespace && tool !== "nodes") return;
 
-    setLoading(true);
+    // Only show full loading state if we don't have data yet
+    if (dataRef.current.length === 0) {
+      setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
     setError(null);
 
     try {
@@ -127,7 +135,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
         "roles": "k8s-roles",
         "rolebindings": "k8s-rolebindings",
         "port-forwards": "k8s-port-forward",
-        "metrics": "k8s-metrics-pods", // Default to pods for metrics tool if namespace selected
+        "metrics": "k8s-metrics-pods", // Default to metrics tool if namespace selected
       };
 
       let endpoint = endpointMap[tool];
@@ -169,15 +177,31 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
           console.warn("Could not find array data in response", json);
         }
       }
-      setData(newData);
+
+      // Deep equality check to prevent unnecessary re-renders
+      setData(prev => {
+        if (isEqual(prev, newData)) {
+          return prev;
+        }
+        dataRef.current = newData;
+        return newData;
+      });
+
       setLastUpdated(new Date());
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "An unknown error occurred";
       setError(message);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   }, [namespace, context, tool, setLastUpdated]);
+
+  useEffect(() => {
+    // Reset data when tool or namespace changes to show full loading state
+    setData([]);
+    dataRef.current = [];
+  }, [tool, namespace]);
 
   useEffect(() => {
     fetchData();
@@ -222,7 +246,7 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <RefreshSelector />
+          <RefreshSelector isRefreshing={isRefreshing} />
           <div className="flex items-center border rounded-md overflow-hidden bg-background">
             <Button
               variant={viewMode === "grid" ? "secondary" : "ghost"}
@@ -274,27 +298,27 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
         </div>
       </div>
 
-      {loading && (
+      {loading && data.length === 0 && (
         <div className="flex items-center justify-center h-64" role="status" aria-label="Loading contents...">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       )}
 
       {error && (
-        <Card className="border-red-900/20 bg-red-900/20" role="alert">
+        <Card className="border-red-900/20 bg-red-900/20 mb-6" role="alert">
           <CardContent className="pt-6 text-red-400">
             Error: {error}
           </CardContent>
         </Card>
       )}
 
-      {!loading && !error && data.length === 0 && (
+      {data.length === 0 && !loading && !error && (
         <div className="text-center py-12 text-zinc-500">
           No resources found in this namespace.
         </div>
       )}
 
-      {!loading && !error && data.length > 0 && (
+      {data.length > 0 && (
         <>
           {tool === "metrics" ? (
             <MetricsDashboard
@@ -303,9 +327,10 @@ export default function DashboardContent({ namespace, context, tool }: Dashboard
             />
           ) : viewMode === "grid" ? (
             <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-              {data.map((item, i) => (
-                <ResourceCard key={i} item={item} tool={tool} namespace={namespace} />
-              ))}
+              {data.map((item, i) => {
+                const id = String(item.name || item.podName || (item.metadata as { name?: string })?.name || i);
+                return <ResourceCard key={id} item={item} tool={tool} namespace={namespace} />;
+              })}
             </div>
           ) : (
             <ResourceTable data={data} tool={tool} namespace={namespace} />
