@@ -455,12 +455,13 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
               size="icon"
               className="h-6 w-6 text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
               onClick={() => {
-                setCheatSheetTarget({ name: serviceName, type: 'services' });
+                setPfTarget({ serviceName });
+                setPfPorts({ remote: "80", local: "8080", address: "127.0.0.1" });
               }}
-              title="Kubectl Cheat Sheet"
-              aria-label={`Show kubectl cheat sheet for ${serviceName}`}
+              title="Port Forward"
+              aria-label={`Port forward for service ${serviceName}`}
             >
-              <Terminal className="h-3 w-3" />
+              <Zap className="h-3 w-3" />
             </Button>
           );
         },
