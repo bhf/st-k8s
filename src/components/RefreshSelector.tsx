@@ -14,7 +14,7 @@ import {
 import { RefreshCcw, Timer, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export function RefreshSelector() {
+export function RefreshSelector({ isRefreshing }: { isRefreshing?: boolean }) {
   const { autoRefresh, setAutoRefresh, interval, setInterval: setRefreshInterval, lastUpdated, refresh } = useRefresh();
   const [now, setNow] = useState(new Date());
 
@@ -30,9 +30,18 @@ export function RefreshSelector() {
   return (
     <div className="flex items-center gap-2">
       {lastUpdated && (
-        <span className="text-[10px] text-muted-foreground whitespace-nowrap hidden sm:inline-flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          {timeSince !== null && (timeSince < 5 ? "Just now" : `${timeSince}s ago`)}
+        <span className="text-[10px] text-muted-foreground whitespace-nowrap hidden sm:inline-flex items-center gap-1 min-w-[80px] justify-end">
+          {isRefreshing ? (
+            <>
+              <RefreshCcw className="h-3 w-3 animate-spin text-blue-500" />
+              <span className="text-blue-500 font-medium">Refreshing</span>
+            </>
+          ) : (
+            <>
+              <Clock className="h-3 w-3" />
+              {timeSince !== null && (timeSince < 5 ? "Just now" : `${timeSince}s ago`)}
+            </>
+          )}
         </span>
       )}
 
@@ -44,8 +53,9 @@ export function RefreshSelector() {
           className="h-full w-8 p-0 rounded-none border-r hover:bg-zinc-800"
           title="Refresh Now"
           aria-label="Refresh now"
+          disabled={isRefreshing}
         >
-          <RefreshCcw className="h-4 w-4" />
+          <RefreshCcw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
         </Button>
 
         <DropdownMenu>
