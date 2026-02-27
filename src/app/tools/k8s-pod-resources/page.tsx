@@ -6,50 +6,10 @@ import Image from "next/image";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { RefreshSelector } from "@/components/RefreshSelector";
 import { useRefresh } from "@/lib/refresh-context";
+import { parseCpu, parseMemory, formatCpu, formatMemory } from "@/lib/utils";
 
 function fetcher(url: string) {
   return fetch(url).then((res) => res.json());
-}
-
-function parseCpu(cpu: string): number {
-  if (!cpu || cpu === '-') return 0;
-  if (cpu.endsWith('m')) return parseInt(cpu) / 1000;
-  return parseFloat(cpu);
-}
-
-function parseMemory(mem: string): number {
-  if (!mem || mem === '-') return 0;
-  const match = mem.match(/^([0-9.]+)([a-zA-Z]*)$/);
-  if (!match) return 0;
-  const value = parseFloat(match[1]);
-  const unit = match[2];
-  const multipliers: Record<string, number> = {
-    'Ki': 1024,
-    'Mi': 1024 * 1024,
-    'Gi': 1024 * 1024 * 1024,
-    'Ti': 1024 * 1024 * 1024 * 1024,
-    'K': 1000,
-    'M': 1000 * 1000,
-    'G': 1000 * 1000 * 1000,
-  };
-  return value * (multipliers[unit] || 1);
-}
-
-function formatCpu(value: number): string {
-  if (value === 0) return "-";
-  if (value < 1) return `${Math.round(value * 1000)}m`;
-  return `${value.toFixed(2)}`;
-}
-
-function formatMemory(value: number): string {
-  if (value === 0) return "-";
-  const units = ["B", "Ki", "Mi", "Gi", "Ti"];
-  let unitIndex = 0;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex++;
-  }
-  return `${value.toFixed(1)}${units[unitIndex]}`;
 }
 
 interface PodResource {

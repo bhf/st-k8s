@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToolType } from "./Sidebar";
-import { Grid, List, Download, Zap, XCircle, MessageSquarePlus, Terminal } from "lucide-react";
+import { Grid, List, Download, Zap, XCircle, MessageSquarePlus, Terminal, ChevronRight, ChevronDown } from "lucide-react";
 import { MetricsDashboard } from "@/components/MetricsCharts";
 import { useChat } from "@/components/ChatContext";
 import { JsonRenderer } from "@/components/JsonRenderer";
@@ -12,7 +12,7 @@ import { RefreshSelector } from "@/components/RefreshSelector";
 import { useRefresh } from "@/lib/refresh-context";
 import { toast } from "sonner";
 import { KubectlCheatSheet } from "@/components/KubectlCheatSheet";
-import { isEqual } from "@/lib/utils";
+import { isEqual, parseCpu, parseMemory, formatCpu, formatMemory, cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/table";
 import {
   ColumnDef,
+  ExpandedState,
+  getExpandedRowModel,
   flexRender,
   getCoreRowModel,
   useReactTable,
@@ -347,6 +349,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
   const [pfTarget, setPfTarget] = useState<{ podName?: string, serviceName?: string } | null>(null);
   const [pfPorts, setPfPorts] = useState({ remote: "8080", local: "8080", address: "127.0.0.1" });
   const [cheatSheetTarget, setCheatSheetTarget] = useState<{ name: string, type: string } | null>(null);
+  const [expanded, setExpanded] = useState<ExpandedState>({});
 
   const handlePortForward = useCallback(async (params: { podName?: string, serviceName?: string, containerPort: number, localPort?: number, localAddress?: string }) => {
     try {
@@ -389,12 +392,66 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
     }
   }, [refresh]);
 
+  // Transform data for pod-resources tool to group by pod
+  const processedData = useMemo(() => {
+    if (tool !== 'pod-resources') return data;
+
+    const pods: Record<string, any> = {};
+    data.forEach((item: any) => {
+      const podName = String(item.podName || '');
+      if (!pods[podName]) {
+        pods[podName] = {
+          ...item,
+          subRows: [],
+          _cpuReqVal: 0,
+          _cpuLimVal: 0,
+          _memReqVal: 0,
+          _memLimVal: 0,
+        };
+      }
+      
+      const cpuReq = parseCpu(String(item.cpuRequest || '-'));
+      const cpuLim = parseCpu(String(item.cpuLimit || '-'));
+      const memReq = parseMemory(String(item.memoryRequest || '-'));
+      const memLim = parseMemory(String(item.memoryLimit || '-'));
+
+      pods[podName]._cpuReqVal += cpuReq;
+      pods[podName]._cpuLimVal += cpuLim;
+      pods[podName]._memReqVal += memReq;
+      pods[podName]._memLimVal += memLim;
+      
+      pods[podName].subRows.push({
+        ...item,
+        subRows: undefined,
+        _isSub: true
+      });
+    });
+
+    return Object.values(pods)
+      .sort((a: any, b: any) => String(a.podName).localeCompare(String(b.podName)))
+      .map(pod => {
+        if (pod.subRows.length <= 1) {
+          return { ...pod.subRows[0], subRows: undefined };
+        }
+
+      return {
+        ...pod,
+        cpuRequest: formatCpu(pod._cpuReqVal),
+        cpuLimit: formatCpu(pod._cpuLimVal),
+        memoryRequest: formatMemory(pod._memReqVal),
+        memoryLimit: formatMemory(pod._memLimVal),
+        containerName: `${pod.subRows.length} containers`,
+      };
+    });
+  }, [data, tool]);
+
   // Determine columns from ALL items to handle sparse data
   const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(() => {
     const allKeys = new Set<string>();
-    data.forEach((item) => {
+    // Use processedData to ensure all keys are shown
+    processedData.forEach((item) => {
       Object.keys(item).forEach((key) => {
-        if (key !== "metadata") {
+        if (key !== "metadata" && key !== "subRows" && !key.startsWith('_')) {
           allKeys.add(key);
         }
       });
@@ -410,6 +467,27 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
       header: key,
       cell: (info) => {
         const val = info.getValue();
+        const row = info.row;
+
+        // Custom renderer for name columns with expansion toggle
+        if ((key === 'podName' || key === 'name') && tool === 'pod-resources' && row.getCanExpand()) {
+          return (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  row.toggleExpanded();
+                }}
+                className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors text-zinc-500 hover:text-blue-500"
+                title={row.getIsExpanded() ? "Collapse" : "Expand"}
+              >
+                {row.getIsExpanded() ? <ChevronDown size={14} strokeWidth={3} /> : <ChevronRight size={14} strokeWidth={3} />}
+              </button>
+              <span className="font-semibold text-blue-600 dark:text-blue-400">{String(val)}</span>
+            </div>
+          );
+        }
+
         if (typeof val === "object" && val !== null) {
           if (Object.keys(val).length === 0) return "";
           return <JsonRenderer value={val} label={key} />;
@@ -438,20 +516,26 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           const row = info.row.original;
           const podName = String(row.podName || '');
           const containerName = String(row.containerName || '');
+          const isExpandable = info.row.getCanExpand();
+
           return (
             <div className="flex gap-2 items-center">
-              <a
-                href={`/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}`}
-                className="text-blue-500 hover:text-blue-400 text-[10px] font-semibold underline underline-offset-2"
-                target="_blank"
-              >
-                Logs
-              </a>
+              {!isExpandable && (
+                <a
+                  href={`/tools/k8s-pod-logs?namespace=${namespace}&podName=${podName}&containerName=${containerName}`}
+                  className="text-blue-500 hover:text-blue-400 text-[10px] font-semibold underline underline-offset-2"
+                  target="_blank"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Logs
+                </a>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setPfTarget({ podName });
                   setPfPorts({ remote: "8080", local: "8080", address: "127.0.0.1" });
                 }}
@@ -531,7 +615,8 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
             variant="ghost"
             size="icon-sm"
             className="h-7 w-7 text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 hover:bg-zinc-500/10"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               setCheatSheetTarget({ name, type: tool || 'resource' });
             }}
             title="Kubectl Cheat Sheet"
@@ -556,7 +641,8 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
             variant="ghost"
             size="icon-sm"
             className="h-7 w-7 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               addAttachment({
                 name,
                 type: tool || 'resource',
@@ -575,20 +661,26 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
     });
 
     return baseCols;
-  }, [data, tool, namespace, handleStopPortForward, addAttachment]);
+  }, [processedData, tool, namespace, handleStopPortForward, addAttachment]);
 
   const table = useReactTable({
-    data,
+    data: processedData,
     columns,
+    state: {
+      expanded,
+    },
+    onExpandedChange: setExpanded,
+    getSubRows: (row) => (row as any).subRows,
+    getExpandedRowModel: getExpandedRowModel(),
     columnResizeMode: "onChange",
     getRowId: (row, index) => {
       const id = String(row.name || row.podName || (row.metadata as { name?: string })?.name || index);
-      return id;
+      return (row as any)._isSub ? `${id}-${index}` : id;
     },
     getCoreRowModel: getCoreRowModel(),
   });
 
-  if (data.length === 0) return null;
+  if (processedData.length === 0) return null;
 
   return (
     <div className="rounded-md border bg-white dark:bg-zinc-900 overflow-hidden">
@@ -600,7 +692,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="relative uppercase whitespace-nowrap group"
+                    className="relative uppercase whitespace-nowrap group text-xs font-bold text-zinc-500"
                     style={{ width: header.getSize() }}
                   >
                     {header.isPlaceholder
@@ -616,7 +708,6 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
                         ? "bg-blue-500 opacity-100 w-1"
                         : ""
                         }`}
-                    // Hack to show resizer always on hover of header, need 'group' on TableHead
                     />
                   </TableHead>
                 ))}
@@ -625,7 +716,14 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow 
+                key={row.id}
+                className={cn(
+                  row.depth > 0 ? "bg-zinc-50/50 dark:bg-zinc-800/20 border-l-4 border-l-blue-500/30" : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50",
+                  row.getCanExpand() && "cursor-pointer"
+                )}
+                onClick={() => row.getCanExpand() && row.toggleExpanded()}
+              >
                 {row.getVisibleCells().map((cell) => {
                   const val = cell.getValue();
                   const isObject = typeof val === "object" && val !== null;
@@ -633,7 +731,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
                   return (
                     <TableCell
                       key={cell.id}
-                      className={isObject ? "" : "truncate max-w-[200px]"}
+                      className={isObject ? "" : "truncate max-w-[200px] py-2"}
                       title={isObject ? undefined : String(val)}
                       style={{ width: cell.column.getSize() }}
                     >
