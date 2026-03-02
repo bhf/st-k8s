@@ -13,8 +13,6 @@ import {
   Cpu,
   Plus,
   Clipboard,
-  Monitor,
-  ExternalLink,
   Check
 } from "lucide-react";
 import {
@@ -69,7 +67,7 @@ export default function Footer({
       const res = await fetch(new URL("/api/version", baseUrl).toString());
       const data = await res.json();
       setVersionInfo(data);
-      
+
       if (manual) {
         if (data.updateAvailable) {
           toast.success(`Update available: v${data.latestVersion}`);
@@ -111,12 +109,6 @@ export default function Footer({
         cwd: projectPath || "/absolute/path/to/st-k8s",
       },
     },
-  };
-
-  const getCursorDeepLink = () => {
-    const configStr = JSON.stringify(mcpConfig.servers["st-k8s"]);
-    const encodedConfig = btoa(configStr);
-    return `cursor://anysphere.cursor-deeplink/mcp/install?name=st-k8s&config=${encodedConfig}`;
   };
 
   const copyToClipboard = () => {
@@ -243,30 +235,6 @@ export default function Footer({
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4 flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Monitor className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm font-semibold">Cursor</span>
-                  </div>
-                  <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded border border-emerald-500/20 uppercase font-mono tracking-wider">Recommended</span>
-                </div>
-                <p className="text-xs text-zinc-500 leading-relaxed">
-                  One-click installation for Cursor. This will add the <code className="text-zinc-300">st-k8s</code> server to your MCP settings.
-                </p>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="w-full bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition-all font-semibold"
-                >
-                  <a href={getCursorDeepLink()}>
-                    Install in Cursor
-                    <ExternalLink className="ml-2 w-3 h-3" />
-                  </a>
-                </Button>
-              </div>
-
               <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4 flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-orange-400" />
