@@ -36,7 +36,9 @@ Analyze the issue content and assign it to **one** of the following Areas:
 ### 2. Issue Generation
 Use the `mcp_github_issue_write` tool to create the issue.
 
-**Field Mapping:**
+**CRITICAL**: Your only task is to create the issue. Do **NOT** begin working on the issue, do **NOT** modify any source code, and do **NOT** start any other tasks related to the issue once it is created.
+
+**Field Mapping**:
 -   **Title**: A concise summary of the request.
 -   **Body**: A detailed description of the task.
 -   **Area Field**: Since custom fields cannot always be set directly via API tools, **you must include the Area in the issue body** as a highlighted section.
