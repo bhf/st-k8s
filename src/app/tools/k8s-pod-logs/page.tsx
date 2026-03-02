@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -168,7 +169,7 @@ function LogViewer() {
     <div className="flex flex-col h-screen dark:bg-black">
       {/* Branded Header */}
       <header className="p-4 border-b flex items-center bg-black justify-between gap-3 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
+        <Link href="/k8s-dashboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
           <Image
             src="/logo2.png"
             alt="st-k8s"
@@ -180,20 +181,39 @@ function LogViewer() {
           <span className="font-bold text-xl text-[#368dab] bg-black px-2 py-1 rounded truncate">
             ~$ ST-K8s_
           </span>
-        </div>
+        </Link>
       </header>
 
       <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100 italic">
-              Logs: <span className="text-[#368dab] font-mono">{podName}</span>
+            <h1 className="text-2xl font-bold text-zinc-100 italic flex items-center gap-3">
+              <span>Logs: <span className="text-[#368dab] font-mono">{podName}</span></span>
+              <span className={`text-xs font-bold tracking-widest px-2 py-0.5 rounded-full border ${isStreaming ? 'border-green-500 text-green-500 animate-pulse' : 'border-zinc-600 text-zinc-500'}`}>
+                {isStreaming ? '[LIVE]' : '[STATIC]'}
+              </span>
             </h1>
             <p className="text-sm text-zinc-500 font-mono">
               [container: {containerName}] [ns: {namespace}]
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <div className="flex items-center gap-2 mr-2">
+              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Tail Lines:</span>
+              <Input
+                type="number"
+                value={tailLines}
+                onChange={e => setTailLines(parseInt(e.target.value) || 0)}
+                className="w-16 h-8 text-xs font-mono px-2"
+              />
+              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider ml-1">Since (secs):</span>
+              <Input
+                type="number"
+                value={sinceSeconds}
+                onChange={e => setSinceSeconds(parseInt(e.target.value) || 0)}
+                className="w-16 h-8 text-xs font-mono px-2"
+              />
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -227,35 +247,6 @@ function LogViewer() {
             >
               Download
             </Button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2 px-4 rounded-md shrink-0 shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Tail Lines:</span>
-            <Input
-              type="number"
-              value={tailLines}
-              onChange={e => setTailLines(parseInt(e.target.value) || 0)}
-              className="w-16 h-7 text-xs font-mono px-2"
-            />
-          </div>
-          <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700" />
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Since (secs):</span>
-            <Input
-              type="number"
-              value={sinceSeconds}
-              onChange={e => setSinceSeconds(parseInt(e.target.value) || 0)}
-              className="w-16 h-7 text-xs font-mono px-2"
-            />
-          </div>
-          <div className="flex-1" />
-          <div className="flex items-center gap-2">
-             <div className={`w-2 h-2 rounded-full ${isStreaming ? 'bg-green-500 animate-pulse' : 'bg-zinc-700'}`} />
-             <span className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest">
-               {isStreaming ? 'Live' : 'Static'}
-             </span>
           </div>
         </div>
 
