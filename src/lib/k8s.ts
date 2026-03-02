@@ -101,6 +101,19 @@ export async function getPods(namespace: string, context?: string) {
   return podsResp.items.flatMap((pod: V1Pod) =>
     (pod.spec?.containers || []).map((container) => {
       const resources = container.resources || {};
+      
+      // Calculate detailed status
+      let status = pod.status?.phase || "Unknown";
+      const containerStatus = pod.status?.containerStatuses?.find(cs => cs.name === container.name);
+      
+      if (containerStatus?.state?.waiting) {
+        status = containerStatus.state.waiting.reason || "Waiting";
+      } else if (containerStatus?.state?.terminated) {
+        status = containerStatus.state.terminated.reason || "Terminated";
+      } else if (containerStatus?.lastState?.terminated && !containerStatus.ready) {
+        status = containerStatus.lastState.terminated.reason || "Error";
+      }
+
       return {
         podName: pod.metadata?.name || "",
         containerName: container.name,
@@ -108,7 +121,7 @@ export async function getPods(namespace: string, context?: string) {
         cpuLimit: resources.limits?.cpu || "-",
         memoryRequest: resources.requests?.memory || "-",
         memoryLimit: resources.limits?.memory || "-",
-        status: pod.status?.phase,
+        status,
         labels: pod.metadata?.labels || {},
         nodeName: pod.spec?.nodeName,
       };
