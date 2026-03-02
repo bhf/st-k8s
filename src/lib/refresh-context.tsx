@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 
 interface RefreshContextType {
   autoRefresh: boolean;
@@ -34,34 +34,34 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setAutoRefresh = (val: boolean) => {
+  const setAutoRefresh = useCallback((val: boolean) => {
     setAutoRefreshState(val);
     localStorage.setItem('k8s-auto-refresh', String(val));
-  };
+  }, []);
 
-  const setInterval = (val: number) => {
+  const setInterval = useCallback((val: number) => {
     setIntervalState(val);
     localStorage.setItem('k8s-refresh-interval', String(val));
-  };
+  }, []);
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
     setTriggerRefresh(prev => prev + 1);
     setLastUpdated(new Date());
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    autoRefresh,
+    setAutoRefresh,
+    interval,
+    setInterval,
+    lastUpdated,
+    setLastUpdated,
+    triggerRefresh,
+    refresh
+  }), [autoRefresh, setAutoRefresh, interval, setInterval, lastUpdated, triggerRefresh, refresh]);
 
   return (
-    <RefreshContext.Provider 
-      value={{ 
-        autoRefresh, 
-        setAutoRefresh, 
-        interval, 
-        setInterval, 
-        lastUpdated, 
-        setLastUpdated,
-        triggerRefresh,
-        refresh
-      }}
-    >
+    <RefreshContext.Provider value={contextValue}>
       {children}
     </RefreshContext.Provider>
   );
