@@ -116,7 +116,7 @@ function PodResourcesTable({ data, namespace }: { data: PodResource[], namespace
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
                       group.status === 'Running' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                      group.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                      (group.status === 'Pending' || group.status === 'ContainerCreating' || group.status === 'PodInitializing') ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
                       'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                     }`}>
                       {group.status}
