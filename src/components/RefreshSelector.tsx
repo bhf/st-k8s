@@ -29,7 +29,7 @@ export function RefreshSelector({ isRefreshing }: { isRefreshing?: boolean }) {
 
   return (
     <div className="flex items-center gap-2">
-      {lastUpdated && (
+      {lastUpdated && (!autoRefresh || interval > 5) && (
         <span className="text-[10px] text-muted-foreground whitespace-nowrap hidden sm:inline-flex items-center gap-1 min-w-[80px] justify-end">
           {isRefreshing ? (
             <>
@@ -82,13 +82,13 @@ export function RefreshSelector({ isRefreshing }: { isRefreshing?: boolean }) {
             </DropdownMenuCheckboxItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground px-2 py-1">Refresh Interval</DropdownMenuLabel>
-            {[5, 10, 30, 60, 300].map((s) => (
+            {[1, 2, 5, 10, 30, 60, 300].map((s) => (
               <DropdownMenuItem
                 key={s}
                 onClick={() => setRefreshInterval(s)}
                 className={`text-xs ${interval === s ? "bg-accent" : ""}`}
               >
-                {s >= 60 ? `${s / 60} minute${s > 60 ? 's' : ''}` : `${s} seconds`}
+                {s >= 60 ? `${s / 60} minute${s > 60 ? 's' : ''}` : s === 1 ? '1 second' : `${s} seconds`}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
