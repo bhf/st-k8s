@@ -409,7 +409,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           _memLimVal: 0,
         };
       }
-      
+
       const cpuReq = parseCpu(String(item.cpuRequest || '-'));
       const cpuLim = parseCpu(String(item.cpuLimit || '-'));
       const memReq = parseMemory(String(item.memoryRequest || '-'));
@@ -419,7 +419,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
       pods[podName]._cpuLimVal += cpuLim;
       pods[podName]._memReqVal += memReq;
       pods[podName]._memLimVal += memLim;
-      
+
       pods[podName].subRows.push({
         ...item,
         subRows: undefined,
@@ -434,19 +434,19 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           return { ...pod.subRows[0], subRows: undefined };
         }
 
-      return {
-        ...pod,
-        cpuRequest: formatCpu(pod._cpuReqVal),
-        cpuLimit: formatCpu(pod._cpuLimVal),
-        memoryRequest: formatMemory(pod._memReqVal),
-        memoryLimit: formatMemory(pod._memLimVal),
-        containerName: `${pod.subRows.length} containers`,
-      };
-    });
+        return {
+          ...pod,
+          cpuRequest: formatCpu(pod._cpuReqVal),
+          cpuLimit: formatCpu(pod._cpuLimVal),
+          memoryRequest: formatMemory(pod._memReqVal),
+          memoryLimit: formatMemory(pod._memLimVal),
+          containerName: `${pod.subRows.length} containers`,
+        };
+      });
   }, [data, tool]);
 
-  // Determine columns from ALL items to handle sparse data
-  const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(() => {
+  // Determine column keys from ALL items to handle sparse data
+  const columnKeysStr = useMemo(() => {
     const allKeys = new Set<string>();
     // Use processedData to ensure all keys are shown
     processedData.forEach((item) => {
@@ -456,10 +456,13 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
         }
       });
     });
+    return Array.from(allKeys).sort().join(',');
+  }, [processedData]);
 
-    const cols = Array.from(allKeys);
-    const nameCols = cols.filter((c) => c.toLowerCase().includes("name"));
-    const otherCols = cols.filter((c) => !c.toLowerCase().includes("name"));
+  const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(() => {
+    const columnKeys = columnKeysStr ? columnKeysStr.split(',') : [];
+    const nameCols = columnKeys.filter((c) => c.toLowerCase().includes("name"));
+    const otherCols = columnKeys.filter((c) => !c.toLowerCase().includes("name"));
     const sortedColumns = [...nameCols, ...otherCols];
 
     const baseCols: ColumnDef<Record<string, unknown>>[] = sortedColumns.map((key) => ({
@@ -661,7 +664,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
     });
 
     return baseCols;
-  }, [processedData, tool, namespace, handleStopPortForward, addAttachment]);
+  }, [columnKeysStr, tool, namespace, handleStopPortForward, addAttachment]);
 
   const table = useReactTable({
     data: processedData,
@@ -716,7 +719,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <TableRow 
+              <TableRow
                 key={row.id}
                 className={cn(
                   row.depth > 0 ? "bg-zinc-50/50 dark:bg-zinc-800/20 border-l-4 border-l-blue-500/30" : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50",
@@ -727,7 +730,7 @@ function ResourceTable({ data, tool, namespace }: { data: Record<string, unknown
                 {row.getVisibleCells().map((cell) => {
                   const val = cell.getValue();
                   const isObject = typeof val === "object" && val !== null;
-                  
+
                   return (
                     <TableCell
                       key={cell.id}
