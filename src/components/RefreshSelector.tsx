@@ -82,13 +82,13 @@ export function RefreshSelector({ isRefreshing }: { isRefreshing?: boolean }) {
             </DropdownMenuCheckboxItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground px-2 py-1">Refresh Interval</DropdownMenuLabel>
-            {[5, 10, 30, 60, 300].map((s) => (
+            {[1, 2, 5, 10, 30, 60, 300].map((s) => (
               <DropdownMenuItem
                 key={s}
                 onClick={() => setRefreshInterval(s)}
                 className={`text-xs ${interval === s ? "bg-accent" : ""}`}
               >
-                {s >= 60 ? `${s / 60} minute${s > 60 ? 's' : ''}` : `${s} seconds`}
+                {s >= 60 ? `${s / 60} minute${s > 60 ? 's' : ''}` : s === 1 ? '1 second' : `${s} seconds`}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
