@@ -29,7 +29,7 @@ export function RefreshSelector({ isRefreshing }: { isRefreshing?: boolean }) {
 
   return (
     <div className="flex items-center gap-2">
-      {lastUpdated && (
+      {lastUpdated && (!autoRefresh || interval > 5) && (
         <span className="text-[10px] text-muted-foreground whitespace-nowrap hidden sm:inline-flex items-center gap-1 min-w-[80px] justify-end">
           {isRefreshing ? (
             <>
