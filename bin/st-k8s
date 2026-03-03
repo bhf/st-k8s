@@ -2,6 +2,7 @@
 const { spawnSync } = require('child_process');
 const { existsSync } = require('fs');
 const path = require('path');
+const net = require('net'); // Added for port detection
 
 function printBanner() {
   const banner = [
@@ -21,8 +22,8 @@ function printBanner() {
   console.log(banner);
 }
 
-function run(cmd, args) {
-  const res = spawnSync(cmd, args, { stdio: 'inherit', cwd: root });
+function run(cmd, args, options = {}) {
+  const res = spawnSync(cmd, args, { stdio: 'inherit', cwd: root, ...options });
   if (res.error) {
     console.error(res.error);
     process.exit(1);
@@ -30,7 +31,45 @@ function run(cmd, args) {
   if (res.status !== 0) process.exit(res.status || 1);
 }
 
-const args = process.argv.slice(2);
+// Function to find an available port
+function findAvailablePort(startPort) {
+  return new Promise((resolve, reject) => {
+    let port = startPort;
+    function tryPort() {
+      const server = net.createServer();
+      server.once('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          port++;
+          tryPort();
+        } else {
+          reject(err);
+        }
+      });
+      server.once('listening', () => {
+        server.close(() => resolve(port));
+      });
+      server.listen(port);
+    }
+    tryPort();
+  });
+}
+
+let args = process.argv.slice(2);
+let userPort = null;
+
+// Parse --port or -p argument
+const portIndex = args.findIndex(arg => arg === '--port' || arg === '-p');
+if (portIndex > -1) {
+  const portValue = args[portIndex + 1];
+  if (portValue && !isNaN(parseInt(portValue))) {
+    userPort = parseInt(portValue);
+    // Remove --port/-p and its value from args
+    args.splice(portIndex, 2);
+  } else {
+    console.error('Error: --port or -p requires a port number.');
+    process.exit(1);
+  }
+}
 
 if (args.includes('--help')) {
   console.log(`
@@ -38,6 +77,7 @@ Usage: st-k8s [options]
 
 Options:
   --mcp      Launch the MCP server instead of the Web UI
+  --port <number>, -p <number>  Specify the port to listen on (default: 3000)
   --help     Display this help message
   `);
   process.exit(0);
@@ -47,50 +87,70 @@ const isMcp = args.includes('--mcp');
 const root = path.join(__dirname, '..');
 const standaloneServer = path.join(root, '.next', 'standalone', 'server.js');
 
-if (!isMcp) {
-  // Print banner on launch only for the Web UI
-  printBanner();
-}
+let resolvedPort = userPort || 3000; // Default port
 
-if (isMcp) {
-  // Launch the MCP server
-  // Avoid printing any logs as they corrupt the MCP stdio protocol
-  run('npm', ['run', 'mcp', '--silent']);
-  process.exit(0);
-}
+async function main() {
+  if (!isMcp) {
+    // Print banner on launch only for the Web UI
+    printBanner();
 
-// Build if needed
-if (!existsSync(path.join(root, '.next'))) {
-  console.log('No build detected — running `npm run build`...');
-  run('npm', ['run', 'build']);
-}
-
-// Prefer standalone server if present
-if (existsSync(standaloneServer)) {
-  console.log('Starting standalone server...');
-
-  // Standalone server needs public and static files copied to serve them
-  const standalonePublic = path.join(root, '.next', 'standalone', 'public');
-  const standaloneStatic = path.join(root, '.next', 'standalone', '.next', 'static');
-  if (!existsSync(standalonePublic)) {
-    const fs = require('fs');
-    if (fs.cpSync) {
-      fs.cpSync(path.join(root, 'public'), standalonePublic, { recursive: true });
-      fs.cpSync(path.join(root, '.next', 'static'), standaloneStatic, { recursive: true });
-    } else {
-      run('cp', ['-r', path.join(root, 'public'), standalonePublic]);
-      run('cp', ['-r', path.join(root, '.next', 'static'), standaloneStatic]);
+    // Find an available port if not specified by the user
+    if (!userPort) {
+      const availablePort = await findAvailablePort(3000);
+      if (availablePort !== 3000) {
+        console.warn(`Warning: Port 3000 is in use. Using port ${availablePort} instead.`);
+      }
+      resolvedPort = availablePort;
     }
   }
 
-  // Inject package version for standalone server (normally provided by npm start)
-  if (!process.env.npm_package_version) {
-    const pkg = require(path.join(root, 'package.json'));
-    process.env.npm_package_version = pkg.version;
+  if (isMcp) {
+    // Launch the MCP server
+    // Avoid printing any logs as they corrupt the MCP stdio protocol
+    run('npm', ['run', 'mcp', '--silent']);
+    process.exit(0);
   }
 
-  run('node', [standaloneServer]);
-} else {
-  console.log('Starting Next.js production server (`npm run start`)...');
-  run('npm', ['run', 'start']);
+  // Build if needed
+  if (!existsSync(path.join(root, '.next'))) {
+    console.log('No build detected — running `npm run build`...');
+    run('npm', ['run', 'build']);
+  }
+
+  // Prefer standalone server if present
+  if (existsSync(standaloneServer)) {
+    console.log(`Starting standalone server on port ${resolvedPort}...`);
+
+    // Standalone server needs public and static files copied to serve them
+    const standalonePublic = path.join(root, '.next', 'standalone', 'public');
+    const standaloneStatic = path.join(root, '.next', 'standalone', '.next', 'static');
+    if (!existsSync(standalonePublic)) {
+      const fs = require('fs');
+      if (fs.cpSync) {
+        fs.cpSync(path.join(root, 'public'), standalonePublic, { recursive: true });
+        fs.cpSync(path.join(root, '.next', 'static'), standaloneStatic, { recursive: true });
+      } else {
+        run('cp', ['-r', path.join(root, 'public'), standalonePublic]);
+        run('cp', ['-r', path.join(root, '.next', 'static'), standaloneStatic]);
+      }
+    }
+
+    // Inject package version for standalone server (normally provided by npm start)
+    if (!process.env.npm_package_version) {
+      const pkg = require(path.join(root, 'package.json'));
+      process.env.npm_package_version = pkg.version;
+    }
+
+    // Pass the resolved port via environment variable
+    run('node', [standaloneServer], { env: { ...process.env, PORT: resolvedPort } });
+  } else {
+    console.log(`Starting Next.js production server (\`npm run start\`) on port ${resolvedPort}...`);
+    // Pass the resolved port via -p flag
+    run('npm', ['run', 'start', '--', '-p', resolvedPort]);
+  }
 }
+
+main().catch(err => {
+  console.error('An unexpected error occurred:', err);
+  process.exit(1);
+});
