@@ -118,7 +118,12 @@ async function main() {
   if (isMcp) {
     // Launch the MCP server
     // Avoid printing any logs as they corrupt the MCP stdio protocol
-    run('npm', ['run', 'mcp', '--silent']);
+    // Ensure KUBECONFIG is passed if the user has one
+    const env = { ...process.env };
+    if (process.env.KUBECONFIG) {
+      env.KUBECONFIG = process.env.KUBECONFIG;
+    }
+    run('npm', ['run', 'mcp', '--silent'], { env });
     process.exit(0);
   }
 
