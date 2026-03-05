@@ -83,6 +83,7 @@ Options:
   process.exit(0);
 }
 
+const os = require('os');
 const isMcp = args.includes('--mcp');
 const root = path.join(__dirname, '..');
 const standaloneServer = path.join(root, '.next', 'standalone', 'server.js');
@@ -142,7 +143,9 @@ async function main() {
     }
 
     // Pass the resolved port via environment variable
-    run('node', [standaloneServer], { env: { ...process.env, PORT: resolvedPort } });
+    // Ensure KUBECONFIG is set so the standalone server can find the kube config
+    const kubeconfig = process.env.KUBECONFIG || path.join(os.homedir(), '.kube', 'config');
+    run('node', [standaloneServer], { env: { ...process.env, PORT: resolvedPort, KUBECONFIG: kubeconfig } });
   } else {
     console.log(`Starting Next.js production server (\`npm run start\`) on port ${resolvedPort}...`);
     // Pass the resolved port via -p flag
