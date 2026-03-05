@@ -87,6 +87,17 @@ const isMcp = args.includes('--mcp');
 const root = path.join(__dirname, '..');
 const standaloneServer = path.join(root, '.next', 'standalone', 'server.js');
 
+// Ensure KUBECONFIG is inherited if not already set, or default to standard locations
+if (!process.env.KUBECONFIG) {
+  const home = process.env.HOME || process.env.USERPROFILE;
+  if (home) {
+    const defaultKubeConfig = path.join(home, '.kube', 'config');
+    if (existsSync(defaultKubeConfig)) {
+      process.env.KUBECONFIG = defaultKubeConfig;
+    }
+  }
+}
+
 let resolvedPort = userPort || 3000; // Default port
 
 async function main() {
