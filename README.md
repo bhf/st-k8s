@@ -17,8 +17,7 @@ st-k8s
 ```
 
 
-Features a dashboard (with a K9s inspired dark theme and keyboard navigation), REST API, port forwarding management, resource monitoring, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview). 
-Integrates with VSCode and Copilot.
+Features a dashboard (with a K9s inspired dark theme and keyboard navigation), REST API, port forwarding management, resource monitoring, and MCP server. In browser AI chat powered by the Copilot SDK (technical preview) or any OpenAI API compatible provider.
 
 ![Chat](docs/chat_1.png)
 ![Context in chat](docs/chat_2.png)
