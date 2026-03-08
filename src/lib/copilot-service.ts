@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { CopilotClient, defineTool } from "@github/copilot-sdk";
+import { OpenAICompatibleProvider } from "./llm-providers/openai";
+import { ChatProvider } from "./llm-providers/types";
 import {
     getNamespaces,
     getPods,
@@ -427,43 +429,69 @@ export function resetService() {
     currentToolsHash = null;
 }
 
+export function getProvider(isReadOnly: boolean): ChatProvider {
+    const providerType = process.env.CHAT_PROVIDER || "copilot";
+    const tools = !isReadOnly ? [...READ_ONLY_TOOLS, ...OPERATIONAL_TOOLS] : READ_ONLY_TOOLS;
+
+    if (providerType === "openai") {
+        return new OpenAICompatibleProvider(
+            process.env.OPENAI_API_URL || "https://api.openai.com/v1",
+            process.env.OPENAI_API_KEY || "",
+            tools
+        );
+    }
+
+    // Default to copilot
+    return {
+        async sendMessage(message: string, model: string = "gpt-4o", attachments?: { name: string, type: string, data: unknown }[], isReadOnly: boolean = true) {
+            const sess = await getSession(model, { readOnly: isReadOnly });
+
+            let fullPrompt = message;
+            if (attachments && attachments.length > 0) {
+                const contextStr = attachments.map(a => `[Attached ${a.type}: ${a.name}]\n${JSON.stringify(a.data, null, 2)}`).join("\n\n");
+                fullPrompt = `I have attached the following Kubernetes resource context to this conversation:\n\n${contextStr}\n\nUser Message: ${message}`;
+            }
+
+            const result = await sess.sendAndWait({ prompt: fullPrompt });
+
+            if (!result) {
+                throw new Error("Failed to get response from Copilot");
+            }
+
+            return result.data.content;
+        },
+        async getModels() {
+            if (!client) {
+                client = new CopilotClient({ logLevel: "info" });
+            }
+
+            try {
+                if (client.getState() === "disconnected") {
+                    await client.start();
+                }
+
+                const models = await client.listModels();
+                return models;
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                if (message.includes("Not authenticated")) {
+                    console.warn("[CopilotService] Not authenticated with GitHub Copilot. Chat features will be disabled until authenticated.");
+                } else {
+                    console.error("Failed to list models:", error);
+                }
+                return [];
+            }
+        }
+    };
+}
+
 export async function sendMessage(message: string, model: string = "gpt-4o", attachments?: { name: string, type: string, data: unknown }[], isReadOnly: boolean = true) {
-    const sess = await getSession(model, { readOnly: isReadOnly });
-
-    let fullPrompt = message;
-    if (attachments && attachments.length > 0) {
-        const contextStr = attachments.map(a => `[Attached ${a.type}: ${a.name}]\n${JSON.stringify(a.data, null, 2)}`).join("\n\n");
-        fullPrompt = `I have attached the following Kubernetes resource context to this conversation:\n\n${contextStr}\n\nUser Message: ${message}`;
-    }
-
-    const result = await sess.sendAndWait({ prompt: fullPrompt });
-
-    if (!result) {
-        throw new Error("Failed to get response from Copilot");
-    }
-
-    return result.data.content;
+    const provider = getProvider(isReadOnly);
+    return provider.sendMessage(message, model, attachments, isReadOnly);
 }
 
 export async function getModels() {
-    if (!client) {
-        client = new CopilotClient({ logLevel: "info" });
-    }
-
-    try {
-        if (client.getState() === "disconnected") {
-            await client.start();
-        }
-
-        const models = await client.listModels();
-        return models;
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        if (message.includes("Not authenticated")) {
-            console.warn("[CopilotService] Not authenticated with GitHub Copilot. Chat features will be disabled until authenticated.");
-        } else {
-            console.error("Failed to list models:", error);
-        }
-        return [];
-    }
+    // getModels doesn't technically need tools, but we pass READ_ONLY_TOOLS to satisfy getProvider
+    const provider = getProvider(true);
+    return provider.getModels();
 }
