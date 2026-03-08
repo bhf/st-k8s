@@ -28,24 +28,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useChat } from "./ChatContext";
 import type { ChatSession } from "./ChatContext";
+import { WebLLMProvider, useWebLLM } from "./WebLLMProvider";
+import * as webllm from "@mlc-ai/web-llm";
 
 interface ChatComponentProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export default function ChatComponent({
+export default function ChatComponent(props: ChatComponentProps) {
+  return (
+    <WebLLMProvider>
+      <ChatComponentInner {...props} />
+    </WebLLMProvider>
+  );
+}
+
+function ChatComponentInner({
   isOpen: controlledIsOpen,
   onClose,
 }: ChatComponentProps) {
   const [isOpen, setIsOpen] = useState<boolean>(!!controlledIsOpen);
   const [model, setModel] = useState("gpt-4o");
-  const [availableModels, setAvailableModels] = useState<{ id: string; name: string }[]>([]);
+  const [availableModels, setAvailableModels] = useState<{ id: string; name: string; isLocal?: boolean }[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
+  const [tools, setTools] = useState<any[]>([]);
+
+  const { engine, loading: webllmLoading, progress: webllmProgress, error: webllmError, loadModel } = useWebLLM();
 
   const {
     messages,
@@ -66,15 +79,24 @@ export default function ChatComponent({
     if (controlledIsOpen !== undefined) setIsOpen(controlledIsOpen);
   }, [controlledIsOpen]);
 
-  // Fetch available models
+  // Fetch available models and tools
   useEffect(() => {
     async function fetchModels() {
       try {
         const res = await fetch("/api/models");
         if (res.ok) {
           const data = await res.json();
-          if (data.models && Array.isArray(data.models)) {
-            setAvailableModels(data.models);
+          let models = data.models;
+          if (models && Array.isArray(models)) {
+            // Add local WebLLM models if WebGPU is supported
+            if (typeof navigator !== "undefined" && (navigator as any).gpu) {
+              models = [
+                ...models,
+                { id: "Llama-3.1-8B-Instruct-q4f32_1-MLC", name: "Llama-3.1-8B-Instruct (Browser)", isLocal: true },
+                { id: "Phi-3.5-mini-instruct-q4f16_1-MLC", name: "Phi-3.5-mini-instruct (Browser)", isLocal: true },
+              ];
+            }
+            setAvailableModels(models);
           }
         }
       } catch (err) {
@@ -83,6 +105,29 @@ export default function ChatComponent({
     }
     fetchModels();
   }, []);
+
+  useEffect(() => {
+    async function fetchTools() {
+      try {
+        const res = await fetch(`/api/tools/schema?isReadOnly=${isReadOnly}`);
+        if (res.ok) {
+          const data = await res.json();
+          setTools(data.tools || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch tools", err);
+      }
+    }
+    fetchTools();
+  }, [isReadOnly]);
+
+  // Handle local model switching
+  useEffect(() => {
+    const activeModel = availableModels.find(m => m.id === model);
+    if (activeModel?.isLocal) {
+      loadModel(model);
+    }
+  }, [model, availableModels, loadModel]);
 
   // Auto-scroll to bottom on new message
   useEffect(() => {
@@ -117,30 +162,111 @@ export default function ChatComponent({
     setLoading(true);
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMsg.content,
-          model,
-          isReadOnly,
-          attachments: attachedResources.map((r) => ({
-            name: r.name,
-            type: r.type,
-            data: r.data,
-          })),
-        }),
-      });
+      const activeModel = availableModels.find(m => m.id === model);
 
-      if (!res.ok) throw new Error("Failed to get response");
+      if (activeModel?.isLocal) {
+        if (!engine) {
+          throw new Error("Local model is still downloading or failed to load. Please check the console or wait.");
+        }
+        // Evaluate locally using WebLLM
+        let currentMessages: any[] = messages.map(m => ({ role: m.role as any, content: m.content }));
+        currentMessages.push({ role: "user", content: userMsg.content });
 
-      const data = await res.json();
-      if (!data || !data.response) throw new Error("Invalid response");
+        setMessages((msgs) => [
+          ...msgs,
+          { role: "assistant", content: "" },
+        ]);
 
-      setMessages((msgs) => [
-        ...msgs,
-        { role: "assistant", content: data.response as string },
-      ]);
+        let fullResponse = "";
+        let attemptNum = 0;
+
+        while (attemptNum < 5) {
+          attemptNum++;
+          console.log(`[WebLLM] Generating completion (Attempt ${attemptNum})...`, { messages: currentMessages });
+          const result = await engine.chat.completions.create({
+            messages: currentMessages,
+            tools: tools && tools.length > 0 ? tools : undefined,
+          });
+
+          const choice = result.choices[0];
+          const responseMsg = choice.message;
+          console.log(`[WebLLM] Received response:`, responseMsg);
+
+          if (responseMsg.content) {
+            fullResponse += responseMsg.content;
+            setMessages((msgs) => {
+              const newMsgs = [...msgs];
+              newMsgs[newMsgs.length - 1] = { role: "assistant", content: fullResponse };
+              return newMsgs;
+            });
+            currentMessages.push({ role: "assistant", content: responseMsg.content });
+          }
+
+          if (responseMsg.tool_calls && responseMsg.tool_calls.length > 0) {
+            currentMessages.push(responseMsg); // Append tool calls message
+            for (const toolCall of responseMsg.tool_calls) {
+              const fn = toolCall.function;
+              let params;
+              try {
+                params = JSON.parse(fn.arguments || "{}");
+              } catch {
+                params = {};
+              }
+
+              // Proxy tool call to backend
+              console.log(`[WebLLM] Proxying tool call to backend:`, { tool: fn.name, params });
+              const toolRes = await fetch("/api/tools", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  tool: fn.name,
+                  params,
+                  isReadOnly
+                })
+              });
+
+              const toolResBody = await toolRes.json();
+              const resultStr = toolResBody.error || toolResBody.result || "Success";
+              console.log(`[WebLLM] Tool execution resulted in:`, resultStr);
+
+              currentMessages.push({
+                role: "tool",
+                tool_call_id: toolCall.id,
+                content: resultStr
+              });
+            }
+          } else {
+            // No more tool calls, we are done
+            break;
+          }
+        }
+      } else {
+        // Default to server-side
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: userMsg.content,
+            model,
+            isReadOnly,
+            attachments: attachedResources.map((r) => ({
+              name: r.name,
+              type: r.type,
+              data: r.data,
+            })),
+          }),
+        });
+
+        if (!res.ok) throw new Error("Failed to get response");
+
+        const data = await res.json();
+        if (!data || !data.response) throw new Error("Invalid response");
+
+        setMessages((msgs) => [
+          ...msgs,
+          { role: "assistant", content: data.response as string },
+        ]);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
       setError(msg);
@@ -421,9 +547,25 @@ export default function ChatComponent({
               </div>
             </div>
           )}
-          {error && (
+          {webllmLoading && webllmProgress && (
+            <div className="flex justify-start">
+              <div className="flex flex-col gap-1 bg-zinc-800 text-zinc-300 px-4 py-2 rounded-lg border border-zinc-700 w-full max-w-[80%]">
+                <div className="flex justify-between text-xs mb-1">
+                  <span>Downloading Model Array into Browser</span>
+                </div>
+                <div className="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-blue-500 h-1.5 transition-all duration-300"
+                    style={{ width: `${Math.round((webllmProgress.progress) * 100)}%` }}
+                  />
+                </div>
+                <span className="text-[10px] text-zinc-400 mt-1">{webllmProgress.text}</span>
+              </div>
+            </div>
+          )}
+          {(error || webllmError) && (
             <div className="flex justify-center" role="alert">
-              <div className="text-red-400 text-xs mt-2">{error}</div>
+              <div className="text-red-400 text-xs mt-2">{error || webllmError}</div>
             </div>
           )}
         </div>
@@ -483,10 +625,10 @@ export default function ChatComponent({
             type="submit"
             size="icon"
             className="bg-[#368dab] hover:bg-[#2a6f87] text-white"
-            disabled={loading || !input.trim()}
+            disabled={loading || webllmLoading || !input.trim()}
             aria-label="Send message"
           >
-            {loading ? (
+            {loading || webllmLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <Send className="w-5 h-5" />
