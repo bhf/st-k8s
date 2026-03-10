@@ -14,8 +14,9 @@ A Next.js-based Kubernetes dashboard with three integration modes:
 ### Triple Integration Model
 All three modes share core logic:
 - **`src/lib/k8s.ts`**: Core K8s client logic (lazy-loaded to avoid build-time connections). SHARED across all 3 modes.
-- **`src/mcp-server.ts`**: Standalone MCP server using `@modelcontextprotocol/sdk` for stdio transport.
-- **`src/lib/copilot-service.ts`**: Server-side chat tools using `@github/copilot-sdk`. Integrated via `api/chat`.
+- **`src/lib/k8s-tools.ts`**: Kubernetes tool definitions for LLMs. SHARED across modes.
+- **`src/mcp-server.ts`**: Standalone MCP server using `@modelcontextprotocol/sdk` for stdio transport. Uses tools from `lib/k8s-tools.ts`.
+- **`src/lib/chat-service.ts`**: Server-side chat tools using `@github/copilot-sdk` and other providers. Integrated via `api/chat`.
 - **`src/app/api/tools/**/route.ts`**: REST API routes (all force-dynamic).
 
 ### Lazy-Load Pattern for K8s Client
@@ -30,10 +31,11 @@ All three modes share core logic:
 2. **Tools Pages** (`app/tools`): Simpler views for specific resources.
    - Uses `swr` for data fetching.
 
-### Copilot Integration
+### Copilot / Chat Integration
 - **Frontend**: `src/components/ChatComponent.tsx` (Client Component) sends messages to `/api/chat`.
-- **Backend**: `/api/chat` route calls `src/lib/copilot-service.ts`.
-- **Tools**: Defined in `copilot-service.ts` using `defineTool`, mirroring MCP capabilities.
+- **Backend**: `/api/chat` route calls `src/lib/chat-service.ts`.
+- **Service**: `chat-service.ts` orchestrates providers (GitHub Copilot, OpenAI).
+- **Tools**: Defined in `k8s-tools.ts` using `defineTool`, mirroring MCP capabilities.
 
 ## Development Workflows
 
@@ -76,9 +78,9 @@ export async function GET(req: NextRequest) {
 ### Adding New K8s Resources
 1. Add function to `src/lib/k8s.ts` (e.g., `getConfigMaps`).
 2. Create API route: `src/app/api/tools/k8s-configmaps/route.ts`.
-3. Add tool to `src/mcp-server.ts` schema handler.
-4. Add tool to `src/lib/copilot-service.ts` (defineTool).
-5. Add dashboard UI support if needed.
+3. Add tool to `src/lib/k8s-tools.ts`.
+4. Import and add tool to `src/mcp-server.ts` schema handler if needed.
+5. Dashboard UI support if needed.
 
 ### MCP Tool Naming
 - Prefix: `list_<resource>` (e.g., `list_namespaces`, `list_pods`).
