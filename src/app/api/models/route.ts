@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getModels } from "@/lib/copilot-service";
+import { getModels } from "@/lib/chat-service";
 
 export const dynamic = "force-dynamic";
 

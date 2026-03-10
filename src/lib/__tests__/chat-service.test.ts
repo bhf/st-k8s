@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getSession, resetService } from "../copilot-service";
+import { getSession, resetService } from "../chat-service";
 import { CopilotClient } from "@github/copilot-sdk";
 
 // Mock the CopilotClient

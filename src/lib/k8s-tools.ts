@@ -1,7 +1,5 @@
 import { z } from "zod";
-import { CopilotClient, defineTool } from "@github/copilot-sdk";
-import { OpenAICompatibleProvider } from "./llm-providers/openai";
-import { ChatProvider } from "./llm-providers/types";
+import { defineTool } from "@github/copilot-sdk";
 import {
     getNamespaces,
     getPods,
@@ -30,7 +28,7 @@ import {
 } from "./k8s";
 
 // Define tools
-const listContextsTool = defineTool("list_contexts", {
+export const listContextsTool = defineTool("list_contexts", {
     description: "List all available Kubernetes contexts from kubeconfig",
     parameters: z.object({}),
     handler: async () => {
@@ -39,7 +37,7 @@ const listContextsTool = defineTool("list_contexts", {
     },
 });
 
-const listNamespacesTool = defineTool("list_namespaces", {
+export const listNamespacesTool = defineTool("list_namespaces", {
     description: "List all Kubernetes namespaces",
     parameters: z.object({
         context: z.string().optional().describe("Kubernetes context (optional)"),
@@ -50,7 +48,7 @@ const listNamespacesTool = defineTool("list_namespaces", {
     },
 });
 
-const listPodsTool = defineTool("list_pods", {
+export const listPodsTool = defineTool("list_pods", {
     description: "List pods and their resources in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -62,7 +60,7 @@ const listPodsTool = defineTool("list_pods", {
     },
 });
 
-const listDeploymentsTool = defineTool("list_deployments", {
+export const listDeploymentsTool = defineTool("list_deployments", {
     description: "List deployments in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -74,7 +72,7 @@ const listDeploymentsTool = defineTool("list_deployments", {
     }
 });
 
-const listServicesTool = defineTool("list_services", {
+export const listServicesTool = defineTool("list_services", {
     description: "List services in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -86,7 +84,7 @@ const listServicesTool = defineTool("list_services", {
     }
 });
 
-const listDaemonSetsTool = defineTool("list_daemonsets", {
+export const listDaemonSetsTool = defineTool("list_daemonsets", {
     description: "List DaemonSets in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -98,7 +96,7 @@ const listDaemonSetsTool = defineTool("list_daemonsets", {
     }
 });
 
-const listReplicaSetsTool = defineTool("list_replicasets", {
+export const listReplicaSetsTool = defineTool("list_replicasets", {
     description: "List ReplicaSets in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -110,7 +108,7 @@ const listReplicaSetsTool = defineTool("list_replicasets", {
     }
 });
 
-const listStatefulSetsTool = defineTool("list_statefulsets", {
+export const listStatefulSetsTool = defineTool("list_statefulsets", {
     description: "List StatefulSets in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -122,7 +120,7 @@ const listStatefulSetsTool = defineTool("list_statefulsets", {
     }
 });
 
-const listIngressesTool = defineTool("list_ingresses", {
+export const listIngressesTool = defineTool("list_ingresses", {
     description: "List Ingresses in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -134,7 +132,7 @@ const listIngressesTool = defineTool("list_ingresses", {
     }
 });
 
-const listEndpointsTool = defineTool("list_endpoints", {
+export const listEndpointsTool = defineTool("list_endpoints", {
     description: "List Endpoints in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -146,7 +144,7 @@ const listEndpointsTool = defineTool("list_endpoints", {
     }
 });
 
-const listEventsTool = defineTool("list_events", {
+export const listEventsTool = defineTool("list_events", {
     description: "List Events in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -158,7 +156,7 @@ const listEventsTool = defineTool("list_events", {
     }
 });
 
-const listPVCsTool = defineTool("list_pvcs", {
+export const listPVCsTool = defineTool("list_pvcs", {
     description: "List PersistentVolumeClaims in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -170,7 +168,7 @@ const listPVCsTool = defineTool("list_pvcs", {
     }
 });
 
-const listNodesTool = defineTool("list_nodes", {
+export const listNodesTool = defineTool("list_nodes", {
     description: "List Kubernetes nodes",
     parameters: z.object({
         context: z.string().optional().describe("Kubernetes context (optional)"),
@@ -181,7 +179,7 @@ const listNodesTool = defineTool("list_nodes", {
     }
 });
 
-const listConfigMapsTool = defineTool("list_configmaps", {
+export const listConfigMapsTool = defineTool("list_configmaps", {
     description: "List Kubernetes ConfigMaps in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -193,7 +191,7 @@ const listConfigMapsTool = defineTool("list_configmaps", {
     }
 });
 
-const listJobsTool = defineTool("list_jobs", {
+export const listJobsTool = defineTool("list_jobs", {
     description: "List Kubernetes Jobs in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -205,7 +203,7 @@ const listJobsTool = defineTool("list_jobs", {
     }
 });
 
-const listCronJobsTool = defineTool("list_cronjobs", {
+export const listCronJobsTool = defineTool("list_cronjobs", {
     description: "List Kubernetes CronJobs in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -217,7 +215,7 @@ const listCronJobsTool = defineTool("list_cronjobs", {
     }
 });
 
-const listServiceAccountsTool = defineTool("list_serviceaccounts", {
+export const listServiceAccountsTool = defineTool("list_serviceaccounts", {
     description: "List Kubernetes ServiceAccounts in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -229,7 +227,7 @@ const listServiceAccountsTool = defineTool("list_serviceaccounts", {
     }
 });
 
-const listRolesTool = defineTool("list_roles", {
+export const listRolesTool = defineTool("list_roles", {
     description: "List Kubernetes Roles in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -241,7 +239,7 @@ const listRolesTool = defineTool("list_roles", {
     }
 });
 
-const listRoleBindingsTool = defineTool("list_rolebindings", {
+export const listRoleBindingsTool = defineTool("list_rolebindings", {
     description: "List Kubernetes RoleBindings in a namespace",
     parameters: z.object({
         namespace: z.string().describe("Kubernetes namespace"),
@@ -253,7 +251,7 @@ const listRoleBindingsTool = defineTool("list_rolebindings", {
     }
 });
 
-const startPortForwardTool = defineTool("start_port_forward", {
+export const startPortForwardTool = defineTool("start_port_forward", {
     description: "Initiate port forwarding to a Pod or Service",
     parameters: z.object({
         namespace: z.string().optional().describe("Kubernetes namespace (default: default)"),
@@ -280,7 +278,7 @@ const startPortForwardTool = defineTool("start_port_forward", {
     }
 });
 
-const stopPortForwardTool = defineTool("stop_port_forward", {
+export const stopPortForwardTool = defineTool("stop_port_forward", {
     description: "Terminate an active port forwarding session",
     parameters: z.object({
         id: z.string().describe("Unique ID of the port forward session"),
@@ -291,7 +289,7 @@ const stopPortForwardTool = defineTool("stop_port_forward", {
     }
 });
 
-const listPortForwardsTool = defineTool("list_port_forwards", {
+export const listPortForwardsTool = defineTool("list_port_forwards", {
     description: "List all active port forwarding sessions",
     parameters: z.object({}),
     handler: async () => {
@@ -300,7 +298,7 @@ const listPortForwardsTool = defineTool("list_port_forwards", {
     }
 });
 
-const getPodLogsTool = defineTool("get_pod_logs", {
+export const getPodLogsTool = defineTool("get_pod_logs", {
     description: "Get logs for a specific pod and container",
     parameters: z.object({
         namespace: z.string().optional().describe("Kubernetes namespace (default: default)"),
@@ -316,26 +314,7 @@ const getPodLogsTool = defineTool("get_pod_logs", {
     }
 });
 
-const SYSTEM_PROMPT = `
-You are an expert Kubernetes assistant for the ST-K8s dashboard. 
-Your primary goal is to help users understand, monitor, and troubleshoot their Kubernetes clusters.
-
-SECURITY GUARDRAILS:
-- You operate in a STRICTLY READ-ONLY environment.
-- You must NOT attempt to create, delete, or modify any resources, files or otherwise on the user's machine. This includes using tools which can modify the user's environment.
-- You must NOT attempt to create, delete, or modify any Kubernetes resources (Pods, Deployments, Services, etc.).
-- If a user asks you to perform a mutative operation, politely explain that you are restricted to read-only actions for security reasons.
-- You can list resources, get logs, view configurations, and provide analysis based on the retrieved data.
-- Sensitive operational tools like port forwarding are excluded from your default capabilities.
-
-GUIDELINES:
-- Be concise and technical.
-- Provide YAML snippets or CLI commands for illustrative purposes when helpful, but always remind the user they must execute them manually if they intend to make changes.
-- Use the provided tools to fetch real-time data from the cluster.
-`;
-
-// Define tool lists by category
-const READ_ONLY_TOOLS = [
+export const READ_ONLY_TOOLS = [
     listContextsTool,
     listNamespacesTool,
     listPodsTool,
@@ -358,140 +337,8 @@ const READ_ONLY_TOOLS = [
     getPodLogsTool,
 ];
 
-const OPERATIONAL_TOOLS = [
+export const OPERATIONAL_TOOLS = [
     startPortForwardTool,
     stopPortForwardTool,
     listPortForwardsTool
 ];
-
-// Singleton client/session management
-let client: CopilotClient | null = null;
-type CopilotSession = Awaited<ReturnType<CopilotClient["createSession"]>>;
-let session: CopilotSession | null = null;
-let currentModel: string | null = null;
-let currentToolsHash: string | null = null;
-
-function getToolsHash(tools: any[]) {
-    return tools.map(t => t.name).sort().join(",");
-}
-
-export async function getSession(model: string = "gpt-4o", options: { readOnly?: boolean } = { readOnly: true }) {
-    const readOnly = options.readOnly !== false;
-    const tools = !readOnly ? [...READ_ONLY_TOOLS, ...OPERATIONAL_TOOLS] : READ_ONLY_TOOLS;
-    const toolsHash = getToolsHash(tools) + (readOnly ? "-ro" : "-rw");
-
-    console.log(`[CopilotService] getSession called with model: ${model}, readOnly: ${readOnly}`);
-
-    if (session && currentModel === model && currentToolsHash === toolsHash) {
-        console.log(`[CopilotService] Reusing existing session`);
-        return session;
-    }
-
-    if (session) {
-        console.log(`[CopilotService] Destroying old session to re-configure`);
-        try {
-            await session.destroy();
-        } catch (err) {
-            console.warn("[CopilotService] Error destroying old session:", err);
-        }
-        session = null;
-    }
-
-    if (!client) {
-        client = new CopilotClient({ logLevel: "info" });
-    }
-
-    const sessionConfig: any = {
-        model,
-        tools,
-    };
-
-    if (readOnly) {
-        sessionConfig.systemMessage = {
-            mode: "append",
-            content: SYSTEM_PROMPT
-        };
-    }
-
-    session = await client.createSession(sessionConfig);
-
-    currentModel = model;
-    currentToolsHash = toolsHash;
-    console.log(`[CopilotService] Session created with ${tools.length} tools and readOnly=${readOnly}`);
-
-    return session;
-}
-
-export function resetService() {
-    client = null;
-    session = null;
-    currentModel = null;
-    currentToolsHash = null;
-}
-
-export function getProvider(isReadOnly: boolean): ChatProvider {
-    const providerType = process.env.CHAT_PROVIDER || "copilot";
-    const tools = !isReadOnly ? [...READ_ONLY_TOOLS, ...OPERATIONAL_TOOLS] : READ_ONLY_TOOLS;
-
-    if (providerType === "openai") {
-        return new OpenAICompatibleProvider(
-            process.env.OPENAI_API_URL || "https://api.openai.com/v1",
-            process.env.OPENAI_API_KEY || "",
-            tools
-        );
-    }
-
-    // Default to copilot
-    return {
-        async sendMessage(message: string, model: string = "gpt-4o", attachments?: { name: string, type: string, data: unknown }[], isReadOnly: boolean = true) {
-            const sess = await getSession(model, { readOnly: isReadOnly });
-
-            let fullPrompt = message;
-            if (attachments && attachments.length > 0) {
-                const contextStr = attachments.map(a => `[Attached ${a.type}: ${a.name}]\n${JSON.stringify(a.data, null, 2)}`).join("\n\n");
-                fullPrompt = `I have attached the following Kubernetes resource context to this conversation:\n\n${contextStr}\n\nUser Message: ${message}`;
-            }
-
-            const result = await sess.sendAndWait({ prompt: fullPrompt });
-
-            if (!result) {
-                throw new Error("Failed to get response from Copilot");
-            }
-
-            return result.data.content;
-        },
-        async getModels() {
-            if (!client) {
-                client = new CopilotClient({ logLevel: "info" });
-            }
-
-            try {
-                if (client.getState() === "disconnected") {
-                    await client.start();
-                }
-
-                const models = await client.listModels();
-                return models;
-            } catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                if (message.includes("Not authenticated")) {
-                    console.warn("[CopilotService] Not authenticated with GitHub Copilot. Chat features will be disabled until authenticated.");
-                } else {
-                    console.error("Failed to list models:", error);
-                }
-                return [];
-            }
-        }
-    };
-}
-
-export async function sendMessage(message: string, model: string = "gpt-4o", attachments?: { name: string, type: string, data: unknown }[], isReadOnly: boolean = true) {
-    const provider = getProvider(isReadOnly);
-    return provider.sendMessage(message, model, attachments, isReadOnly);
-}
-
-export async function getModels() {
-    // getModels doesn't technically need tools, but we pass READ_ONLY_TOOLS to satisfy getProvider
-    const provider = getProvider(true);
-    return provider.getModels();
-}

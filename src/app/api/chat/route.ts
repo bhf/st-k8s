@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendMessage } from "@/lib/copilot-service";
+import { sendMessage } from "@/lib/chat-service";
 
 export async function POST(req: NextRequest) {
   try {
