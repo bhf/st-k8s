@@ -3,41 +3,39 @@
 ## Project Overview
 
 A Next.js-based Kubernetes dashboard with three integration modes:
-1. **Web UI** - K9s-inspired dashboard with dark theme
-2. **REST API** - OpenAPI endpoints for K8s resources
-3. **MCP Server** - Model Context Protocol server exposing K8s tools to LLMs
+1. **Web UI** - K9s-inspired dashboard (`src/app/k8s-dashboard`) with keyboard navigation (`:pods`, `:svc`) and individual tool pages (`src/app/tools`)
+2. **REST API** - OpenAPI endpoints for K8s resources (`src/app/api/tools`)
+3. **MCP Server** - Model Context Protocol server exposing K8s tools to LLMs (`src/mcp-server.ts`)
 
-**Key Tech Stack**: Next.js 16 (App Router), TypeScript, Tailwind CSS v4, Kubernetes client-node, Copilot SDK, shadcn/ui components
+**Key Tech Stack**: Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui components, Kubernetes client-node, Copilot SDK, MCP SDK, Vitest.
 
 ## Architecture Patterns
 
 ### Triple Integration Model
-- **`src/lib/k8s.ts`**: Core K8s client logic (lazy-loaded to avoid build-time connections)
-- **`src/mcp-server.ts`**: Standalone MCP server using `@modelcontextprotocol/sdk` for stdio transport
-- **`src/lib/copilot-service.ts`**: In-browser chat tools using `@github/copilot-sdk`
-- **`src/app/api/tools/**/route.ts`**: REST API routes (all force-dynamic)
-
-All three consume the same K8s functions from `lib/k8s.ts` - maintain DRY principle when adding new resources.
+All three modes share core logic:
+- **`src/lib/k8s.ts`**: Core K8s client logic (lazy-loaded to avoid build-time connections). SHARED across all 3 modes.
+- **`src/lib/k8s-tools.ts`**: Kubernetes tool definitions for LLMs. SHARED across modes.
+- **`src/mcp-server.ts`**: Standalone MCP server using `@modelcontextprotocol/sdk` for stdio transport. Uses tools from `lib/k8s-tools.ts`.
+- **`src/lib/chat-service.ts`**: Server-side chat tools using `@github/copilot-sdk` and other providers. Integrated via `api/chat`.
+- **`src/app/api/tools/**/route.ts`**: REST API routes (all force-dynamic).
 
 ### Lazy-Load Pattern for K8s Client
-```typescript
-// lib/k8s.ts uses lazy initialization to prevent build-time cluster connections
-let k8sCoreApi: CoreV1Api | undefined;
-function getClients() {
-  if (!k8sCoreApi) {
-    const kc = new KubeConfig();
-    kc.loadFromDefault();
-    // ... initialize clients
-  }
-  return { core, apps, networking };
-}
-```
-**Why**: Next.js standalone build reads all imports. Direct top-level K8s client init causes build failures.
+`src/lib/k8s.ts` uses lazy initialization for `KubeConfig` and API clients.
+**Critical Rule**: Never initialize K8s clients at the top level of a module. Always check for existing instance or create new one inside a function (e.g., `getClients()`). This prevents build failures in Next.js standalone mode.
 
 ### UI Data Flow
-Dashboard pages (`app/k8s-dashboard/*`) → API routes (`app/api/tools/*`) → `lib/k8s.ts` → Kubernetes cluster
+1. **Dashboard** (`app/k8s-dashboard`): Client components fetch data from API routes (`/api/tools/*`) → `lib/k8s.ts` → Cluster.
+   - Uses `useEffect` and `fetch` directly.
+   - Uses `@tanstack/react-table` for data display.
+   - Uses `CommandPalette` for K9s-style keyboard navigation (global listener on `:`).
+2. **Tools Pages** (`app/tools`): Simpler views for specific resources.
+   - Uses `swr` for data fetching.
 
-All API routes use `export const dynamic = "force-dynamic"` to bypass static rendering.
+### Copilot / Chat Integration
+- **Frontend**: `src/components/ChatComponent.tsx` (Client Component) sends messages to `/api/chat`.
+- **Backend**: `/api/chat` route calls `src/lib/chat-service.ts`.
+- **Service**: `chat-service.ts` orchestrates providers (GitHub Copilot, OpenAI).
+- **Tools**: Defined in `k8s-tools.ts` using `defineTool`, mirroring MCP capabilities.
 
 ## Development Workflows
 
@@ -49,44 +47,21 @@ npm run start     # Production server
 npm run mcp       # MCP server standalone (stdio)
 ```
 
-### Docker Deployment
-```bash
-docker-compose up --build  # Uses multi-stage Dockerfile
-```
-- Dockerfile builds standalone Next.js output
-- Copies `.next/standalone`, `.next/static`, `public/` to runner stage
-- Runs as non-root user on port 3000
-- Requires kubectl context configured on host (volume mount kubeconfig if containerized)
-
-### Adding New K8s Resources
-1. Add function to `src/lib/k8s.ts` (e.g., `getConfigMaps`)
-2. Create API route: `src/app/api/tools/k8s-configmaps/route.ts`
-3. Add tool to `src/mcp-server.ts` CallToolRequestSchema handler
-4. Add tool to `src/lib/copilot-service.ts` (defineTool + add to agent tools array)
-5. Create dashboard page: `src/app/k8s-dashboard/page.tsx` and tool entry
-6. Update `ToolType` in `Sidebar.tsx`
+### Testing
+- **Framework**: Vitest
+- **Location**: `__tests__` directories adjacent to source files (e.g., `src/lib/__tests__/k8s.test.ts`).
+- **Command**: `npm test` (runs all tests), `npm test -- --watch`.
+- **Coverage**: Unit tests for utils and component tests for dashboard.
 
 ## Component Conventions
 
-### shadcn/ui Configuration
-- Style: `new-york`
-- Base color: `neutral`
-- Components in `src/components/ui/`
-- Aliases: `@/components`, `@/lib`, `@/hooks`
-- Lucide icons only
-
-### Client Components
-- Mark with `"use client"` directive
-- `ChatComponent` uses controlled/uncontrolled pattern (check `isOpen` prop)
-- `DashboardContent` uses TanStack Table for grid/table toggle
-- SWR not heavily used - prefer direct fetch in useEffect
-
 ### API Route Pattern
 ```typescript
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"; // REQUIRED for K8s data
 export async function GET(req: NextRequest) {
   try {
-    const data = await getK8sResource(namespace);
+    const namespace = req.nextUrl.searchParams.get("namespace") || "default";
+    const data = await getK8sResource(namespace); // Check lib/k8s.ts
     return NextResponse.json({ data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to fetch";
@@ -95,54 +70,19 @@ export async function GET(req: NextRequest) {
 }
 ```
 
-### CSV Export
-`DashboardContent.tsx` has CSV download logic - reuse pattern for new resource types:
-1. Extract all keys except `metadata`
-2. Sort columns (name fields first)
-3. Escape CSV values properly
+### Adding New K8s Resources
+1. Add function to `src/lib/k8s.ts` (e.g., `getConfigMaps`).
+2. Create API route: `src/app/api/tools/k8s-configmaps/route.ts`.
+3. Add tool to `src/lib/k8s-tools.ts`.
+4. Import and add tool to `src/mcp-server.ts` schema handler if needed.
+5. Dashboard UI support if needed.
 
-## MCP Server Specifics
-
-### Configuration for Clients
-**VSCode** (`mcp.json`):
-```json
-{
-  "servers": {
-    "k8s-tools": {
-      "command": "npm",
-      "args": ["run", "mcp"],
-      "cwd": "/absolute/path/to/st-k8s"
-    }
-  }
-}
-```
-
-**Claude Desktop**: Similar stdio configuration
-
-### Tool Naming Convention
-- Tool names: `list_<resource>` (e.g., `list_namespaces`, `list_pods`)
-- All tools accept optional `namespace` parameter (default: "default")
-- Use Zod for parameter validation
-
-## Critical Dependencies
-
-- `@kubernetes/client-node@^1.4.0`: All K8s API calls
-- `@github/copilot-sdk@^0.1.21`: Browser chat integration (technical preview)
-- `@modelcontextprotocol/sdk@^1.25.3`: MCP server implementation
-- `next@16.0.3`: App Router with standalone output mode
-- `tailwindcss@^4`: v4 syntax (no `tailwind.config.js` - uses `@tailwindcss/postcss`)
+### MCP Tool Naming
+- Prefix: `list_<resource>` (e.g., `list_namespaces`, `list_pods`).
+- Arguments: `namespace` (optional, default "default").
+- Validation: Use Zod schemas.
 
 ## Known Constraints
-
-1. **Kubectl Context Required**: All modes expect valid `~/.kube/config` - no in-cluster auth
-2. **Read-Only Operations**: No mutations exposed (by design for safety)
-3. **Namespace Scoping**: Most tools require explicit namespace (except `list_namespaces`)
-4. **Build Mode**: `next.config.ts` uses `output: "standalone"` for Docker - don't change without updating Dockerfile
-5. **Copilot SDK**: Technical preview - API may change
-
-## Testing Strategy
-
-No test files present. Manual testing via:
-- Dashboard UI: Navigate to `http://localhost:3000/k8s-dashboard`
-- API: Check `http://localhost:3000/openapi.json` and test endpoints
-- MCP: Use VSCode with MCP extension or `npx @modelcontextprotocol/inspector npm run mcp`
+1. **Kubectl Context**: Must be present in environment (file or env vars). No in-cluster auth configured by default.
+2. **Read-Only**: Current tools are read-only to prevent accidental mutations.
+3. **Next.js Standalone**: Do not remove `output: "standalone"` config in `next.config.ts`.
