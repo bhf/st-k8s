@@ -16,10 +16,12 @@ import {
   Clock,
   Play,
   Lock,
-  Zap
+  Zap,
+  MessageSquareShare
 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export type ToolType =
   | "pod-resources"
@@ -121,6 +123,18 @@ export default function Sidebar({
               <span className="ml-2">{tool.label}</span>
             </Button>
           ))}
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-zinc-800">
+          <Link href="/chat" target="_blank" className="w-full">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white"
+            >
+              <MessageSquareShare className="w-4 h-4" />
+              <span>Full-Page Chat</span>
+            </Button>
+          </Link>
         </div>
       </div>
     </aside>

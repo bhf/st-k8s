@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, FormEvent } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card } from "./ui/card";
+import { cn } from "@/lib/utils";
 import {
   Send,
   X,
@@ -19,6 +20,7 @@ import {
   Trash2,
   RotateCcw,
   MessageSquare,
+  ExternalLink,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -30,10 +32,12 @@ import { useChat } from "./ChatContext";
 import type { ChatSession } from "./ChatContext";
 import { WebLLMProvider, useWebLLM } from "./WebLLMProvider";
 import * as webllm from "@mlc-ai/web-llm";
+import Link from "next/link";
 
 interface ChatComponentProps {
   isOpen?: boolean;
   onClose?: () => void;
+  isFullPage?: boolean;
 }
 
 export default function ChatComponent(props: ChatComponentProps) {
@@ -47,8 +51,9 @@ export default function ChatComponent(props: ChatComponentProps) {
 function ChatComponentInner({
   isOpen: controlledIsOpen,
   onClose,
+  isFullPage = false,
 }: ChatComponentProps) {
-  const [isOpen, setIsOpen] = useState<boolean>(!!controlledIsOpen);
+  const [isOpen, setIsOpen] = useState<boolean>(isFullPage || !!controlledIsOpen);
   const [model, setModel] = useState("gpt-4o");
   const [availableModels, setAvailableModels] = useState<{ id: string; name: string; isLocal?: boolean }[]>([]);
   const [input, setInput] = useState("");
@@ -331,15 +336,28 @@ function ChatComponentInner({
 
   return (
     <Card
-      className="fixed bottom-0 right-0 z-[60] w-full max-w-sm sm:max-w-md md:max-w-md h-[70vh] sm:h-[80vh] flex flex-col bg-zinc-900 border border-zinc-800 shadow-2xl rounded-tl-xl p-1 gap-0"
-      style={{ boxShadow: "0 8px 32px 0 rgba(0,0,0,0.45)" }}
+      className={cn(
+        "z-[60] flex flex-col bg-zinc-900 border-zinc-800 shadow-2xl p-1 gap-0",
+        isFullPage 
+          ? "w-full h-full rounded-xl border-zinc-700/50" 
+          : "fixed bottom-0 right-0 w-full max-w-sm sm:max-w-md md:max-w-md h-[70vh] sm:h-[80vh] rounded-tl-xl"
+      )}
+      style={!isFullPage ? { boxShadow: "0 8px 32px 0 rgba(0,0,0,0.45)" } : {}}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-950 rounded-tl-xl">
+      <div className={cn(
+        "flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-950",
+        isFullPage ? "rounded-t-xl" : "rounded-tl-xl"
+      )}>
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-blue-400" />
             <span className="font-semibold text-white text-lg">ST-K8s Chat</span>
+            {!isFullPage && (
+              <Link href="/chat" target="_blank" className="ml-1 text-zinc-500 hover:text-blue-400 transition-colors">
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <button
@@ -444,15 +462,17 @@ function ChatComponentInner({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-zinc-400 hover:text-white w-8 h-8"
-            onClick={handleToggle}
-            aria-label="Close chat"
-          >
-            <X className="w-5 h-5" />
-          </Button>
+          {!isFullPage && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-zinc-400 hover:text-white w-8 h-8"
+              onClick={handleToggle}
+              aria-label="Close chat"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -556,10 +576,13 @@ function ChatComponentInner({
               className={`flex \${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] px-4 py-2 rounded-lg text-sm whitespace-pre-line \${msg.role === "user"
-                  ? "bg-blue-600 text-white rounded-br-none"
-                  : "bg-zinc-800 text-zinc-100 rounded-bl-none border border-zinc-700"
-                  }`}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-sm whitespace-pre-line",
+                  isFullPage ? "max-w-[90%]" : "max-w-[80%]",
+                  msg.role === "user"
+                    ? "bg-blue-600 text-white rounded-br-none"
+                    : "bg-zinc-800 text-zinc-100 rounded-bl-none border border-zinc-700"
+                )}
               >
                 {msg.content}
               </div>
@@ -575,7 +598,10 @@ function ChatComponentInner({
           )}
           {webllmLoading && webllmProgress && (
             <div className="flex justify-start">
-              <div className="flex flex-col gap-1 bg-zinc-800 text-zinc-300 px-4 py-2 rounded-lg border border-zinc-700 w-full max-w-[80%]">
+              <div className={cn(
+                "flex flex-col gap-1 bg-zinc-800 text-zinc-300 px-4 py-2 rounded-lg border border-zinc-700 w-full",
+                isFullPage ? "max-w-[90%]" : "max-w-[80%]"
+              )}>
                 <div className="flex justify-between text-xs mb-1">
                   <span>Downloading Model Array into Browser</span>
                 </div>
