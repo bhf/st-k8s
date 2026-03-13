@@ -56,18 +56,32 @@ function findAvailablePort(startPort) {
 
 let args = process.argv.slice(2);
 let userPort = null;
+let chatProvider = process.env.CHAT_PROVIDER || 'copilot';
+let openaiApiKey = process.env.OPENAI_API_KEY || '';
+let openaiApiUrl = process.env.OPENAI_API_URL || 'https://api.openai.com/v1';
 
-// Parse --port or -p argument
-const portIndex = args.findIndex(arg => arg === '--port' || arg === '-p');
-if (portIndex > -1) {
-  const portValue = args[portIndex + 1];
-  if (portValue && !isNaN(parseInt(portValue))) {
-    userPort = parseInt(portValue);
-    // Remove --port/-p and its value from args
-    args.splice(portIndex, 2);
-  } else {
-    console.error('Error: --port or -p requires a port number.');
-    process.exit(1);
+// Parse arguments
+for (let i = 0; i < args.length; i++) {
+  const arg = args[i];
+  if (arg === '--port' || arg === '-p') {
+    const portValue = args[i + 1];
+    if (portValue && !isNaN(parseInt(portValue))) {
+      userPort = parseInt(portValue);
+      i++; // Skip next arg
+    } else {
+      console.error('Error: --port or -p requires a port number.');
+      process.exit(1);
+    }
+  } else if (arg === '--openai-key') {
+    openaiApiKey = args[i + 1];
+    chatProvider = 'openai';
+    i++;
+  } else if (arg === '--openai-url') {
+    openaiApiUrl = args[i + 1];
+    chatProvider = 'openai';
+    i++;
+  } else if (arg === '--openai') {
+    chatProvider = 'openai';
   }
 }
 
@@ -76,9 +90,19 @@ if (args.includes('--help')) {
 Usage: st-k8s [options]
 
 Options:
-  --mcp      Launch the MCP server instead of the Web UI
-  --port <number>, -p <number>  Specify the port to listen on (default: 3000)
-  --help     Display this help message
+  --mcp                          Launch the MCP server instead of the Web UI
+  --port <number>, -p <number>   Specify the port to listen on (default: 3000)
+  --help                         Display this help message
+
+LLM Providers:
+  --openai                       Use OpenAI as the chat provider (default: copilot)
+  --openai-key <key>             Specify the OpenAI API key
+  --openai-url <url>             Specify the OpenAI API base URL (default: https://api.openai.com/v1)
+
+  Note: You can also use environment variables:
+  CHAT_PROVIDER=openai
+  OPENAI_API_KEY=sk-...
+  OPENAI_API_URL=https://api.openai.com/v1
   `);
   process.exit(0);
 }
@@ -158,11 +182,26 @@ async function main() {
     }
 
     // Pass the resolved port via environment variable
-    run('node', [standaloneServer], { env: { ...process.env, PORT: resolvedPort } });
+    run('node', [standaloneServer], { 
+      env: { 
+        ...process.env, 
+        PORT: resolvedPort,
+        CHAT_PROVIDER: chatProvider,
+        OPENAI_API_KEY: openaiApiKey,
+        OPENAI_API_URL: openaiApiUrl
+      } 
+    });
   } else {
     console.log(`Starting Next.js production server (\`npm run start\`) on port ${resolvedPort}...`);
     // Pass the resolved port via -p flag
-    run('npm', ['run', 'start', '--', '-p', resolvedPort]);
+    run('npm', ['run', 'start', '--', '-p', resolvedPort], {
+      env: {
+        ...process.env,
+        CHAT_PROVIDER: chatProvider,
+        OPENAI_API_KEY: openaiApiKey,
+        OPENAI_API_URL: openaiApiUrl
+      }
+    });
   }
 }
 
