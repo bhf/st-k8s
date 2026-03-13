@@ -92,8 +92,8 @@ function ChatComponentInner({
             if (typeof navigator !== "undefined" && (navigator as any).gpu) {
               models = [
                 ...models,
-                { id: "Llama-3.1-8B-Instruct-q4f32_1-MLC", name: "Llama-3.1-8B-Instruct (Browser)", isLocal: true },
-                { id: "Phi-3.5-mini-instruct-q4f16_1-MLC", name: "Phi-3.5-mini-instruct (Browser)", isLocal: true },
+                { id: "Hermes-3-Llama-3.1-8B-q4f32_1-MLC", name: "Hermes-3-Llama-3.1-8B (Browser)", isLocal: true },
+                { id: "Hermes-2-Pro-Llama-3-8B-q4f32_1-MLC", name: "Hermes-2-Pro-Llama-3-8B (Browser)", isLocal: true },
               ];
             }
             setAvailableModels(models);
@@ -165,9 +165,20 @@ function ChatComponentInner({
       const activeModel = availableModels.find(m => m.id === model);
 
       if (activeModel?.isLocal) {
-        if (!engine) {
-          throw new Error("Local model is still downloading or failed to load. Please check the console or wait.");
+        if (!engine || webllmLoading) {
+          if (!webllmLoading) {
+            console.log(`[WebLLM] Local engine not ready, attempting to load: \${model}`);
+            await loadModel(model);
+          } else {
+            throw new Error("Local model is still downloading or loading. Please wait.");
+          }
         }
+        
+        // Final check after potential reload
+        if (!engine) {
+          throw new Error("Failed to initialize WebLLM engine. Please check the console.");
+        }
+
         // Evaluate locally using WebLLM
         let currentMessages: any[] = messages.map(m => ({ role: m.role as any, content: m.content }));
         currentMessages.push({ role: "user", content: userMsg.content });
@@ -182,7 +193,7 @@ function ChatComponentInner({
 
         while (attemptNum < 5) {
           attemptNum++;
-          console.log(`[WebLLM] Generating completion (Attempt ${attemptNum})...`, { messages: currentMessages });
+          console.log(`[WebLLM] Generating completion (Attempt \${attemptNum})...`, { messages: currentMessages });
           const result = await engine.chat.completions.create({
             messages: currentMessages,
             tools: tools && tools.length > 0 ? tools : undefined,
@@ -319,7 +330,7 @@ function ChatComponentInner({
           <div className="flex items-center gap-2 mt-0.5">
             <button
               onClick={() => setIsReadOnly(!isReadOnly)}
-              className={`flex items-center gap-1 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border transition-colors ${isReadOnly
+              className={`flex items-center gap-1 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border transition-colors \${isReadOnly
                 ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20"
                 : "text-amber-500 bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20"
                 }`}
@@ -364,7 +375,7 @@ function ChatComponentInner({
           <Button
             variant="ghost"
             size="icon"
-            className={`text-zinc-400 hover:text-white w-8 h-8 relative ${showHistory ? "text-blue-400" : ""}`}
+            className={`text-zinc-400 hover:text-white w-8 h-8 relative \${showHistory ? "text-blue-400" : ""}`}
             onClick={() => setShowHistory((v) => !v)}
             aria-label="View chat history"
             title="Chat history"
@@ -494,7 +505,7 @@ function ChatComponentInner({
                     <button
                       onClick={() => handleResumeSession(session)}
                       className="p-1 rounded text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
-                      aria-label={`Resume session: ${session.title}`}
+                      aria-label={`Resume session: \${session.title}`}
                       title="Resume session"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -502,7 +513,7 @@ function ChatComponentInner({
                     <button
                       onClick={() => deleteSession(session.id)}
                       className="p-1 rounded text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                      aria-label={`Delete session: ${session.title}`}
+                      aria-label={`Delete session: \${session.title}`}
                       title="Delete session"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -527,10 +538,10 @@ function ChatComponentInner({
           {messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex \${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] px-4 py-2 rounded-lg text-sm whitespace-pre-line ${msg.role === "user"
+                className={`max-w-[80%] px-4 py-2 rounded-lg text-sm whitespace-pre-line \${msg.role === "user"
                   ? "bg-blue-600 text-white rounded-br-none"
                   : "bg-zinc-800 text-zinc-100 rounded-bl-none border border-zinc-700"
                   }`}
@@ -556,7 +567,7 @@ function ChatComponentInner({
                 <div className="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
                   <div
                     className="bg-blue-500 h-1.5 transition-all duration-300"
-                    style={{ width: `${Math.round((webllmProgress.progress) * 100)}%` }}
+                    style={{ width: `\${Math.round((webllmProgress.progress) * 100)}%` }}
                   />
                 </div>
                 <span className="text-[10px] text-zinc-400 mt-1">{webllmProgress.text}</span>
@@ -595,7 +606,7 @@ function ChatComponentInner({
                   type="button"
                   onClick={() => removeAttachment(res.id)}
                   className="hover:text-white transition-colors p-0.5"
-                  aria-label={`Remove ${res.name}`}
+                  aria-label={`Remove \${res.name}`}
                 >
                   <X className="w-3 h-3" />
                 </button>
