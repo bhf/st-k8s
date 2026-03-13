@@ -62,6 +62,25 @@ Monitor CPU and memory usage for Nodes and Pods directly in the dashboard using 
 - **Pod Metrics**: Inspect resource consumption for individual pods in any namespace.
 - **Visual Charts**: Interactive Recharts-based visualizations for easier performance analysis.
 
+## Hardware Acceleration & WebGPU
+
+ST-K8s supports local AI models running directly in your browser using WebLLM. This requires WebGPU and hardware acceleration to be enabled.
+
+### Google Chrome / Chromium
+1.  Ensure you are on a recent version of Chrome.
+2.  Enable WebGPU: Paste `chrome://flags/#enable-unsafe-webgpu` into your address bar and set it to **Enabled**.
+3.  Enable Vulkan (Linux/Windows): Paste `chrome://flags/#enable-vulkan` and set it to **Enabled**.
+4.  Relaunch Chrome.
+
+### Mozilla Firefox
+1.  Type `about:config` in the address bar.
+2.  Search for `dom.webgpu.enabled` and set it to **true**.
+3.  Search for `gfx.webgpu.force-enabled` and set it to **true** if WebGPU doesn't work by default.
+4.  MacOS users may also need to ensure `gfx.webrender.all` is **true**.
+
+### Verification
+You can verify WebGPU support by visiting [webgpu.github.io/webgpu-samples](https://webgpu.github.io/webgpu-samples/). If the samples run, ST-K8s will be able to load local models.
+
 ## Table of Contents
 
 - [ST-K8s](#st-k8s)
@@ -69,6 +88,7 @@ Monitor CPU and memory usage for Nodes and Pods directly in the dashboard using 
   - [Log Viewer](#log-viewer)
   - [Port Forwarding](#port-forwarding)
   - [Resource Monitoring](#resource-monitoring)
+  - [Hardware Acceleration \& WebGPU](#hardware-acceleration--webgpu)
   - [Table of Contents](#table-of-contents)
   - [How to Run](#how-to-run)
     - [Using Homebrew (macOS/Linux)](#using-homebrew-macoslinux)

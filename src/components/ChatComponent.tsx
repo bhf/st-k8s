@@ -60,6 +60,20 @@ function ChatComponentInner({
 
   const { engine, loading: webllmLoading, progress: webllmProgress, error: webllmError, loadModel } = useWebLLM();
 
+  const MODEL_DISPLAY_NAMES: Record<string, string> = {
+    "gpt-4o": "GPT-4o",
+    "claude-3.5-sonnet": "Claude 3.5",
+    "o1-mini": "o1 Mini",
+    "Hermes-3-Llama-3.1-8B-q4f32_1-MLC": "Hermes 3 (Llama 8B)",
+    "Hermes-2-Pro-Llama-3-8B-q4f32_1-MLC": "Hermes 2 Pro (Llama 8B)",
+  };
+
+  const getModelDisplayName = (modelId: string) => {
+    if (MODEL_DISPLAY_NAMES[modelId]) return MODEL_DISPLAY_NAMES[modelId];
+    // Fallback for unknown models: titlize and truncate
+    return modelId.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ").slice(0, 20);
+  };
+
   const {
     messages,
     setMessages,
@@ -402,22 +416,23 @@ function ChatComponentInner({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 gap-1 bg-zinc-800 border-zinc-700 text-zinc-200 text-xs px-2 hover:bg-zinc-700 hover:text-white"
+                className="h-7 gap-1 bg-zinc-800 border-zinc-700 text-zinc-200 text-xs px-2 hover:bg-zinc-700 hover:text-white max-w-[120px] overflow-hidden"
                 aria-label="Select AI model"
               >
-                {model}
-                <ChevronDown className="h-3 w-3 opacity-50" />
+                <span className="truncate">{getModelDisplayName(model)}</span>
+                <ChevronDown className="h-3 w-3 opacity-50 shrink-0" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-zinc-800 border-zinc-700 text-zinc-200 z-[70] max-h-60 overflow-y-auto">
+            <DropdownMenuContent align="end" className="bg-zinc-800 border-zinc-700 text-zinc-200 z-[70] max-h-60 overflow-y-auto w-56">
               {availableModels.length > 0 ? (
                 availableModels.map((m) => (
                   <DropdownMenuItem
                     key={m.id}
                     onClick={() => setModel(m.id)}
-                    className="focus:bg-zinc-700 focus:text-white cursor-pointer text-xs"
+                    className="focus:bg-zinc-700 focus:text-white cursor-pointer text-xs flex justify-between items-center"
                   >
-                    {m.name}
+                    <span>{getModelDisplayName(m.id)}</span>
+                    {m.isLocal && <span className="text-[10px] bg-zinc-700 px-1 rounded ml-1">Local</span>}
                   </DropdownMenuItem>
                 ))
               ) : (
