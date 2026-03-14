@@ -40,8 +40,41 @@ export const WebLLMProvider = ({ children }: { children: ReactNode }) => {
             setProgress(null);
 
             // Initialize engine
-            console.log(`[WebLLM] Requesting load for model: ${modelId}`);
-            const mlcEngine = new webllm.MLCEngine();
+            console.log(`[WebLLM] Requesting load for model: \${modelId}`);
+            
+            // Custom model list for Qwen and other small models
+            const appConfig: webllm.AppConfig = {
+                model_list: [
+                    ...webllm.prebuiltAppConfig.model_list.filter(m => 
+                        m.model_id.startsWith('Qwen2.5-7B') ||
+                        (m.model_id.startsWith('Llama-3.1-8B-') && !m.model_id.endsWith('-1k')) ||
+                        m.model_id.startsWith('Llama-3.2-1B') ||
+                        m.model_id.startsWith('Hermes-3-Llama-3.1') ||
+                        m.model_id.startsWith('Qwen3-1.7B') ||
+                        m.model_id.startsWith('Qwen3-4B') ||
+                        m.model_id.startsWith('Qwen3-8B')
+                    ),
+                    {
+                        model: "https://huggingface.co/smalinin/Qwen2.5-14B-Instruct_q4f16_1-MLC",
+                        model_id: "Qwen2.5-14B-Instruct_q4f16_1-MLC",
+                        model_lib: "https://huggingface.co/smalinin/Qwen2.5-14B-Instruct_q4f16_1-MLC/resolve/main/Qwen2.5-14B-Instruct_q4f16_1-webgpu.wasm",
+                        low_resource_required: false,
+                        vram_required_MB: 10900.0,
+                        required_features: ["shader-f16"],
+                        overrides: {
+                            context_window_size: 4096,
+                        },
+                    },
+                    {
+                        model: "https://huggingface.co/cfahlgren1/SmolLM-360M-q016-MLC",
+                        model_id: "SmolLM-360M-q016-MLC",
+                        model_lib: `\${webllm.modelLibURLPrefix}\${webllm.modelVersion}/SmolLM-360M-Instruct-q0f16-ctx2k_cs1k-webgpu.wasm`,
+                        overrides: { context_window_size: 2048 },
+                    }
+                ]
+            };
+
+            const mlcEngine = new webllm.MLCEngine({ appConfig });
 
             mlcEngine.setInitProgressCallback((p: webllm.InitProgressReport) => {
                 console.log(`[WebLLM Progress]`, p);
@@ -49,7 +82,7 @@ export const WebLLMProvider = ({ children }: { children: ReactNode }) => {
             });
 
             await mlcEngine.reload(modelId);
-            console.log(`[WebLLM] Successfully loaded model: ${modelId}`);
+            console.log(`[WebLLM] Successfully loaded model: \${modelId}`);
 
             engineRef.current = mlcEngine;
             setEngine(mlcEngine);
