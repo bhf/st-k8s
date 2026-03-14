@@ -69,6 +69,11 @@ function ChatComponentInner({
     "gpt-4o": "GPT-4o",
     "claude-3.5-sonnet": "Claude 3.5",
     "o1-mini": "o1 Mini",
+    "Llama-3.2-1B-Instruct-q4f16_1-MLC": "Llama 3.2 (1B Local)",
+    "SmolLM-360M-q016-MLC": "SmolLM (360M Local)",
+    "Qwen3-1.7B-q4f16_1-MLC": "Qwen 3 (1.7B Local)",
+    "Qwen2.5-7B-Instruct-q4f16_1-MLC": "Qwen 2.5 (7B Local)",
+    "Qwen2.5-14B-Instruct_q4f16_1-MLC": "Qwen 2.5 (14B Local)",
     "Hermes-3-Llama-3.1-8B-q4f32_1-MLC": "Hermes 3 (Llama 8B)",
     "Hermes-2-Pro-Llama-3-8B-q4f32_1-MLC": "Hermes 2 Pro (Llama 8B)",
   };
@@ -111,6 +116,11 @@ function ChatComponentInner({
             if (typeof navigator !== "undefined" && (navigator as any).gpu) {
               models = [
                 ...models,
+                { id: "Llama-3.2-1B-Instruct-q4f16_1-MLC", name: "Llama-3.2-1B (Browser)", isLocal: true },
+                { id: "SmolLM-360M-q016-MLC", name: "SmolLM-360M (Browser)", isLocal: true },
+                { id: "Qwen3-1.7B-q4f16_1-MLC", name: "Qwen3-1.7B (Browser)", isLocal: true },
+                { id: "Qwen2.5-7B-Instruct-q4f16_1-MLC", name: "Qwen2.5-7B (Browser)", isLocal: true },
+                { id: "Qwen2.5-14B-Instruct_q4f16_1-MLC", name: "Qwen2.5-14B (Browser)", isLocal: true },
                 { id: "Hermes-3-Llama-3.1-8B-q4f32_1-MLC", name: "Hermes-3-Llama-3.1-8B (Browser)", isLocal: true },
                 { id: "Hermes-2-Pro-Llama-3-8B-q4f32_1-MLC", name: "Hermes-2-Pro-Llama-3-8B (Browser)", isLocal: true },
               ];
@@ -128,7 +138,7 @@ function ChatComponentInner({
   useEffect(() => {
     async function fetchTools() {
       try {
-        const res = await fetch(`/api/tools/schema?isReadOnly=${isReadOnly}`);
+        const res = await fetch(`/api/tools/schema?isReadOnly=\${isReadOnly}`);
         if (res.ok) {
           const data = await res.json();
           setTools(data.tools || []);
