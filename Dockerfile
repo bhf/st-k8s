@@ -2,7 +2,7 @@
 # Base image: Node 18 LTS (alpine for small size)
 
 # 1) Builder stage: install deps and build
-FROM node:25-alpine AS builder
+FROM node:26-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -26,7 +26,7 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # 2) Runner stage: minimal runtime
-FROM node:25-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
